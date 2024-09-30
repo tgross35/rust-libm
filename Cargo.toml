@@ -30,10 +30,12 @@ force-soft-floats = []
 members = [
   "crates/compiler-builtins-smoke-test",
   "crates/libm-bench",
+  "crates/test-support",
 ]
 
 [dev-dependencies]
 no-panic = "0.1.8"
+test-support = { path = "crates/test-support" }
 
 [build-dependencies]
 rand = { version = "0.6.5", optional = true }

@@ -71,3 +71,6 @@ pub fn cos(x: f64) -> f64 {
         _ => k_sin(y0, y1, 1),
     }
 }
+
+#[cfg(test)]
+test_support::float_test!();
