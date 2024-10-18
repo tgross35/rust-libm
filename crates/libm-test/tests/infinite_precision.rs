@@ -90,7 +90,8 @@ fn make_test_cases(ntests: usize) -> CachedInput {
 }
 
 // macro_rules! infinite_tests {
-//     (@each_signature
+//     (
+//         @each_signature
 //         SysArgsTupleTy: $_sys_argty:ty,
 //         RustArgsTupleTy: $argty:ty,
 //         SysFnTy: $fnty_sys:ty,
@@ -101,39 +102,66 @@ fn make_test_cases(ntests: usize) -> CachedInput {
 //         } ),*],
 //     ) => { paste::paste! {
 //         $(
-//             #[test]
-//             $(#[$fn_meta])*
-//             fn [< musl_random_ $name >]() {
-//                 let fname = stringify!($name);
-//                 let inputs = if fname == "jn" || fname == "jnf" {
-//                     &TEST_CASES_JN
-//                 } else {
-//                     &TEST_CASES
-//                 };
+//             // #[test]
+//             // $(#[$fn_meta])*
+//             // fn [< musl_random_ $name >]() {
+//             //     let fname = stringify!($name);
+//             //     let inputs = if fname == "jn" || fname == "jnf" {
+//             //         &TEST_CASES_JN
+//             //     } else {
+//             //         &TEST_CASES
+//             //     };
 
-//                 let ulp = match ULP_OVERRIDES.iter().find(|(name, _val)| name == &fname) {
-//                     Some((_name, val)) => *val,
-//                     None => ALLOWED_ULP,
-//                 };
+//             //     let ulp = match ULP_OVERRIDES.iter().find(|(name, _val)| name == &fname) {
+//             //         Some((_name, val)) => *val,
+//             //         None => ALLOWED_ULP,
+//             //     };
 
-//                 let cases = <CachedInput as GenerateInput<$argty>>::get_cases(inputs);
-//                 for input in cases {
-//                     let mres = input.call(musl::$name as $fnty_sys);
-//                     let cres = input.call(libm::$name as $fnty_rust);
+//             //     let cases = <CachedInput as GenerateInput<$argty>>::get_cases(inputs);
+//             //     for input in cases {
+//             //         let mres = input.call(musl::$name as $fnty_sys);
+//             //         let cres = input.call(libm::$name as $fnty_rust);
 
-//                     mres.validate(cres, input, ulp);
-//                 }
+//             //         mres.validate(cres, input, ulp);
+//             //     }
+//             // }
+//             infinite_tests! {
+//                 @rug_fn $name foo
 //             }
 //         )*
 //     } };
 
-//     (@all_items$($tt:tt)*) => {};
+//     (@all_items $($tt:tt)*) => {};
+
+//     (
+//         @test_inner
+//         $name:ident,
+//         SysArgsTupleTy: $_sys_argty:ty,
+//         RustArgsTupleTy: $argty:ty,
+//         SysFnTy: $fnty_sys:ty,
+//         RustFnTy: $fnty_rust:ty,
+//         attrs: [$($fn_meta:meta),*],
+//     ) => {
+
+//     }
+
+//     (@rug_fn acos $($tt:tt)*) => {
+//         #[test]
+//         fn foo() {
+//             panic!()
+//         }
+//     };
+//     (
+//         @rug_fn $($tt:tt)*
+//     ) => {
+
+//     };
 // }
 
 // libm::for_each_function!(infinite_tests);
 
 #[test]
-fn foobar_arcsin() {
+fn multiprec_arcsin() {
     let fname = stringify!(asin);
     let inputs = if fname == "jn" || fname == "jnf" {
         &TEST_CASES_JN
