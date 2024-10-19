@@ -9,12 +9,15 @@ use std::sync::LazyLock;
 use az::Az;
 use libm_test::allowed_ulp;
 use libm_test::gen::CachedInput;
+use libm_test::rug_traits::MpFloat;
 use libm_test::rug_traits::ToSomething;
 use libm_test::rug_traits::TupleAssign;
 use libm_test::TRUE_DEFAULT_ULP;
 use libm_test::{CheckOutput, GenerateInput, TupleCall};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
+use rug::ops::CompleteRound;
+use rug::ops::Pow;
 use rug::Assign;
 
 const SEED: [u8; 32] = *b"3.141592653589793238462643383279";
@@ -87,7 +90,7 @@ macro_rules! musl_rand_tests {
     ) => {
         paste::paste! {
             #[test]
-            // $(#[$meta])*
+            $(#[$meta])*
             fn [< multiprec_random_ $fn_name >]() {
                 let fname = stringify!($fn_name);
                 let inputs = if fname == "jn" || fname == "jnf" {
@@ -121,55 +124,54 @@ libm_macros::for_each_function! {
     callback: musl_rand_tests,
     attributes: [],
     skip: [
-        expm1f,
-        rintf,
-        rint,
-        logf,
-        log,
-        log1p,
-        log1pf,
-        expm1,
-        erf,
-        fdimf,
-        // fmaxf,
-        // fminf,
-        fmodf,
-        nextafterf,
-        powf,
-        fdim,
-        // fmax,
-        // fmin,
-        fmod,
-        nextafter,
-        pow,
-        fma,
-        fmaf,
-        ilogbf,
-        ilogb,
-        jnf,
-        jn,
-        scalbnf,
+        frexp,
+        frexpf,
+        ldexp,
         ldexpf,
         scalbn,
-        ldexp,
-        modff,
-        modf,
-        frexpf,
-        lgammaf_r,
-        frexp,
-        lgamma_r,
-        remquof,
-        remquo,
-        sincosf,
-        sincos,
+        scalbnf,
 
+        ilogb,
+        ilogbf,
+        lgamma_r,
+        lgammaf_r,
+        modf,
+        modff,
+        remquo,
+        remquof,
+        sincos,
+        sincosf,
     ],
     fn_extra: match MACRO_FN_NAME {
-        (fabs | fabsf) => rug::Float::abs,
-        (lgamma | lgammaf) => rug::Float::ln_gamma,
-        (tgamma | tgammaf) => rug::Float::gamma,
-        (fmin | fminf) => rug::Float::min,
-        (fmax | fmaxf) => rug::Float::max,
-        _ => rug::Float::MACRO_FN_NAME_NORMALIZED,
+        // (lgamma_r | lgammaf_r) => |x| {
+        //     let f = x.ln_gamma();
+        //     let i = f.cmp(0) as i32;
+        //     (f, i)
+        // },
+        expm1 | expm1f => MpFloat::exp_m1,
+        fabs | fabsf => MpFloat::abs,
+        fdim | fdimf => MpFloat::positive_diff,
+        fma | fmaf => |x: MpFloat, y: &MpFloat, z: &MpFloat| {
+            let res = (&x * y) + z;
+            res.complete(128)
+        },
+        fmax | fmaxf => MpFloat::max,
+        fmin | fminf => MpFloat::min,
+        fmod | fmodf => |x: MpFloat, y: &MpFloat| {
+            x % y
+        },
+        lgamma | lgammaf => MpFloat::ln_gamma,
+        log | logf => MpFloat::ln,
+        log1p | log1pf => MpFloat::log10_1p,
+        nextafter | nextafterf => |mut x: MpFloat, y: &MpFloat| {
+            x.next_toward(y);
+            x
+        },
+        pow | powf => |x: MpFloat, y: &MpFloat| x.pow(y),
+        rint | rintf => |x: MpFloat| x.round(),
+        tgamma | tgammaf => MpFloat::gamma,
+        // sincos | sincosf => MpFloat::sin_cos,
+        // (sincos | sincosf) => MpFloat::sin_cos,
+        _ => MpFloat::MACRO_FN_NAME_NORMALIZED,
     }
 }

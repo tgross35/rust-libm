@@ -3,11 +3,11 @@ use std::collections::BTreeMap;
 use proc_macro2::Span;
 use quote::ToTokens;
 use syn::{
-    bracketed, parenthesized,
+    bracketed,
     parse::{Parse, ParseStream, Parser},
     punctuated::Punctuated,
     spanned::Spanned,
-    token::{Comma, Paren},
+    token::Comma,
     Arm, Attribute, Expr, ExprMatch, Ident, Meta, Token,
 };
 
@@ -211,13 +211,11 @@ fn parse_ident_array(input: ParseStream) -> syn::Result<Vec<Ident>> {
 
 /// Parse an pattern of idents, specifically `(foo | bar | baz)`.
 fn parse_ident_pat(input: ParseStream) -> syn::Result<Vec<Ident>> {
-    if !input.peek(Paren) {
+    if !input.peek2(Token![|]) {
         return Ok(vec![input.parse()?]);
     }
 
-    let content;
-    let _ = parenthesized!(content in input);
-    let fields = Punctuated::<Ident, Token![|]>::parse_separated_nonempty(&content)?;
+    let fields = Punctuated::<Ident, Token![|]>::parse_separated_nonempty(input)?;
     Ok(fields.into_iter().collect())
 }
 

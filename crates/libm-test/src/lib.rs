@@ -24,10 +24,7 @@ pub fn allowed_ulp(name: &str, default: u32) -> u32 {
     match name {
         #[cfg(x86_no_sse)]
         "asinhf" => 6,
-        "lgamma" => 6,
-        "lgamma_r" => 6,
-        "lgammaf" => 6,
-        "lgammaf_r" => 6,
+        "lgamma" | "lgamma_r" | "lgammaf" | "lgammaf_r" => 6,
         "tanh" => 4,
         "tgamma" => 8,
         #[cfg(not(target_pointer_width = "64"))]

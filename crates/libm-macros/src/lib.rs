@@ -551,10 +551,21 @@ struct MacroReplace {
 
 impl MacroReplace {
     fn new(name: &'static str) -> Self {
-        let norm_name = name
-            .strip_suffix("f")
-            .ok_or_else(|| name.strip_suffix("f128"))
-            .unwrap_or(name);
+        let known_mappings = &[
+            ("erff", "erf"),
+            ("erf", "erf"),
+            ("lgammaf_r", "lgamma_r"),
+            ("modff", "modf"),
+            ("modf", "modf"),
+        ];
+
+        let norm_name = match known_mappings.iter().find(|known| known.0 == name) {
+            Some(found) => found.1,
+            None => name
+                .strip_suffix("f")
+                .ok_or_else(|| name.strip_suffix("f128"))
+                .unwrap_or(name),
+        };
 
         Self {
             fn_name: name,
