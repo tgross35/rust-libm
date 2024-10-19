@@ -33,7 +33,29 @@ pub trait CheckOutput<Input>: Sized {
     fn validate(self, expected: Self, input: Input, allowed_ulp: u32);
 }
 
-// impl<T1, R> TupleCall<T1, R
+impl<T1, R> TupleCall<fn(T1) -> R> for (T1,) {
+    type Output = R;
+
+    fn call(self, f: fn(T1) -> R) -> Self::Output {
+        f(self.0)
+    }
+}
+
+impl<T1, T2, R> TupleCall<fn(T1, T2) -> R> for (T1, T2) {
+    type Output = R;
+
+    fn call(self, f: fn(T1, T2) -> R) -> Self::Output {
+        f(self.0, self.1)
+    }
+}
+
+impl<T1, T2, T3, R> TupleCall<fn(T1, T2, T3) -> R> for (T1, T2, T3) {
+    type Output = R;
+
+    fn call(self, f: fn(T1, T2, T3) -> R) -> Self::Output {
+        f(self.0, self.1, self.2)
+    }
+}
 
 /// Implement `TupleCall` for signatures with no `&mut`.
 macro_rules! impl_tupl_call {
@@ -60,111 +82,110 @@ macro_rules! impl_tupl_call {
     };
 }
 
-impl_tupl_call! {
-    (f32) -> f32;
-    (f64) -> f64;
-    (f32) -> i32;
-    (f64) -> i32;
-    (f32, f32) -> f32;
-    (f64, f64) -> f64;
-    (f32, i32) -> f32;
-    (f64, i32) -> f64;
-    (i32, f32) -> f32;
-    (i32, f64) -> f64;
-    (f32, f32, f32) -> f32;
-    (f64, f64, f64) -> f64;
-    (f32) -> (f32, f32);
-    (f64) -> (f64, f64);
-    (f32) -> (f32, c_int);
-    (f64) -> (f64, c_int);
-    (f32, f32) -> (f32, c_int);
-    (f64, f64) -> (f64, c_int);
-}
+// impl_tupl_call! {
+//     (f32) -> f32;
+//     (f64) -> f64;
+//     (f32) -> i32;
+//     (f64) -> i32;
+//     (f32, f32) -> f32;
+//     (f64, f64) -> f64;
+//     (f32, i32) -> f32;
+//     (f64, i32) -> f64;
+//     (i32, f32) -> f32;
+//     (i32, f64) -> f64;
+//     (f32, f32, f32) -> f32;
+//     (f64, f64, f64) -> f64;
+//     (f32) -> (f32, f32);
+//     (f64) -> (f64, f64);
+//     (f32) -> (f32, c_int);
+//     (f64) -> (f64, c_int);
+//     (f32, f32) -> (f32, c_int);
+//     (f64, f64) -> (f64, c_int);
+// }
 
-/* Implement `TupleCall` for signatures that use `&mut` (i.e. system symbols that return
- * more than one value) */
+// /* Implement `TupleCall` for signatures that use `&mut` (i.e. system symbols that return
+//  * more than one value) */
+// impl TupleCall<fn(f32, &mut c_int) -> f32> for (f32,) {
+//     type Output = (f32, c_int);
 
-impl TupleCall<fn(f32, &mut c_int) -> f32> for (f32,) {
-    type Output = (f32, c_int);
+//     fn call(self, f: fn(f32, &mut c_int) -> f32) -> Self::Output {
+//         let mut iret = 0;
+//         let fret = f(self.0, &mut iret);
+//         (fret, iret)
+//     }
+// }
 
-    fn call(self, f: fn(f32, &mut c_int) -> f32) -> Self::Output {
-        let mut iret = 0;
-        let fret = f(self.0, &mut iret);
-        (fret, iret)
-    }
-}
+// impl TupleCall<fn(f64, &mut c_int) -> f64> for (f64,) {
+//     type Output = (f64, c_int);
 
-impl TupleCall<fn(f64, &mut c_int) -> f64> for (f64,) {
-    type Output = (f64, c_int);
+//     fn call(self, f: fn(f64, &mut c_int) -> f64) -> Self::Output {
+//         let mut iret = 0;
+//         let fret = f(self.0, &mut iret);
+//         (fret, iret)
+//     }
+// }
 
-    fn call(self, f: fn(f64, &mut c_int) -> f64) -> Self::Output {
-        let mut iret = 0;
-        let fret = f(self.0, &mut iret);
-        (fret, iret)
-    }
-}
+// impl TupleCall<fn(f32, &mut f32) -> f32> for (f32,) {
+//     type Output = (f32, f32);
 
-impl TupleCall<fn(f32, &mut f32) -> f32> for (f32,) {
-    type Output = (f32, f32);
+//     fn call(self, f: fn(f32, &mut f32) -> f32) -> Self::Output {
+//         let mut ret2 = 0.0;
+//         let ret1 = f(self.0, &mut ret2);
+//         (ret1, ret2)
+//     }
+// }
 
-    fn call(self, f: fn(f32, &mut f32) -> f32) -> Self::Output {
-        let mut ret2 = 0.0;
-        let ret1 = f(self.0, &mut ret2);
-        (ret1, ret2)
-    }
-}
+// impl TupleCall<fn(f64, &mut f64) -> f64> for (f64,) {
+//     type Output = (f64, f64);
 
-impl TupleCall<fn(f64, &mut f64) -> f64> for (f64,) {
-    type Output = (f64, f64);
+//     fn call(self, f: fn(f64, &mut f64) -> f64) -> Self::Output {
+//         let mut ret2 = 0.0;
+//         let ret1 = f(self.0, &mut ret2);
+//         (ret1, ret2)
+//     }
+// }
 
-    fn call(self, f: fn(f64, &mut f64) -> f64) -> Self::Output {
-        let mut ret2 = 0.0;
-        let ret1 = f(self.0, &mut ret2);
-        (ret1, ret2)
-    }
-}
+// impl TupleCall<fn(f32, f32, &mut c_int) -> f32> for (f32, f32) {
+//     type Output = (f32, c_int);
 
-impl TupleCall<fn(f32, f32, &mut c_int) -> f32> for (f32, f32) {
-    type Output = (f32, c_int);
+//     fn call(self, f: fn(f32, f32, &mut c_int) -> f32) -> Self::Output {
+//         let mut iret = 0;
+//         let fret = f(self.0, self.1, &mut iret);
+//         (fret, iret)
+//     }
+// }
 
-    fn call(self, f: fn(f32, f32, &mut c_int) -> f32) -> Self::Output {
-        let mut iret = 0;
-        let fret = f(self.0, self.1, &mut iret);
-        (fret, iret)
-    }
-}
+// impl TupleCall<fn(f64, f64, &mut c_int) -> f64> for (f64, f64) {
+//     type Output = (f64, c_int);
 
-impl TupleCall<fn(f64, f64, &mut c_int) -> f64> for (f64, f64) {
-    type Output = (f64, c_int);
+//     fn call(self, f: fn(f64, f64, &mut c_int) -> f64) -> Self::Output {
+//         let mut iret = 0;
+//         let fret = f(self.0, self.1, &mut iret);
+//         (fret, iret)
+//     }
+// }
 
-    fn call(self, f: fn(f64, f64, &mut c_int) -> f64) -> Self::Output {
-        let mut iret = 0;
-        let fret = f(self.0, self.1, &mut iret);
-        (fret, iret)
-    }
-}
+// impl TupleCall<fn(f32, &mut f32, &mut f32)> for (f32,) {
+//     type Output = (f32, f32);
 
-impl TupleCall<fn(f32, &mut f32, &mut f32)> for (f32,) {
-    type Output = (f32, f32);
+//     fn call(self, f: fn(f32, &mut f32, &mut f32)) -> Self::Output {
+//         let mut ret1 = 0.0;
+//         let mut ret2 = 0.0;
+//         f(self.0, &mut ret1, &mut ret2);
+//         (ret1, ret2)
+//     }
+// }
 
-    fn call(self, f: fn(f32, &mut f32, &mut f32)) -> Self::Output {
-        let mut ret1 = 0.0;
-        let mut ret2 = 0.0;
-        f(self.0, &mut ret1, &mut ret2);
-        (ret1, ret2)
-    }
-}
+// impl TupleCall<fn(f64, &mut f64, &mut f64)> for (f64,) {
+//     type Output = (f64, f64);
 
-impl TupleCall<fn(f64, &mut f64, &mut f64)> for (f64,) {
-    type Output = (f64, f64);
-
-    fn call(self, f: fn(f64, &mut f64, &mut f64)) -> Self::Output {
-        let mut ret1 = 0.0;
-        let mut ret2 = 0.0;
-        f(self.0, &mut ret1, &mut ret2);
-        (ret1, ret2)
-    }
-}
+//     fn call(self, f: fn(f64, &mut f64, &mut f64)) -> Self::Output {
+//         let mut ret1 = 0.0;
+//         let mut ret2 = 0.0;
+//         f(self.0, &mut ret1, &mut ret2);
+//         (ret1, ret2)
+//     }
+// }
 
 // Implement for floats
 impl<F, Input> CheckOutput<Input> for F
