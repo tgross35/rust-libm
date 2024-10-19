@@ -1,10 +1,15 @@
 //! Test with "infinite precision"
+
+#![cfg(feature = "multiprecision-tests")]
 #![allow(unused)]
+
 use std::ffi::c_int;
 use std::sync::LazyLock;
 
 use az::Az;
 use libm_test::gen::CachedInput;
+use libm_test::rug_traits::Thing;
+use libm_test::rug_traits::ToSomething;
 use libm_test::{CheckOutput, GenerateInput, TupleCall};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
@@ -132,31 +137,138 @@ fn make_test_cases(ntests: usize) -> CachedInput {
 
 // libm::for_each_function!(infinite_tests);
 
-#[test]
-fn foobar_arcsin() {
-    let fname = stringify!(asin);
-    let inputs = if fname == "jn" || fname == "jnf" {
-        &TEST_CASES_JN
-    } else {
-        &TEST_CASES
+// #[test]
+// fn foobar_arcsin() {
+//     let fname = stringify!(asin);
+//     let inputs = if fname == "jn" || fname == "jnf" {
+//         &TEST_CASES_JN
+//     } else {
+//         &TEST_CASES
+//     };
+
+//     let ulp = match ULP_OVERRIDES.iter().find(|(name, _val)| name == &fname) {
+//         Some((_name, val)) => *val,
+//         None => ALLOWED_ULP,
+//     };
+
+//     let cases = <CachedInput as GenerateInput<(f64,)>>::get_cases(inputs);
+//     let mut f = rug::Float::new(128);
+
+//     for input in cases {
+//         f.assign(input.0);
+//         f = f.asin();
+//         let rres = f.to_f64();
+
+//         // let mres = input.call(musl::asin as fn(f64) -> f64);
+//         let cres = input.call(libm::asin as fn(f64) -> f64);
+
+//         rres.validate(cres, input, ulp);
+//     }
+// }
+
+macro_rules! musl_rand_tests {
+    (
+        fn_name: $fn_name:ident,
+        CFn: $CFn:ty,
+        CArgs: $CArgs:ty,
+        CRet: $CRet:ty,
+        RustFn: $RustFn:ty,
+        RustArgs: $RustArgs:ty,
+        RustRet: $RustRet:ty,
+        // attrs: [$($meta:meta)*]
+        fn_extra: $rug_fn_name:expr,
+    ) => {
+        paste::paste! {
+            #[test]
+            // $(#[$meta])*
+            fn [< multiprec_random_ $fn_name >]() {
+                let fname = stringify!($fn_name);
+                let inputs = if fname == "jn" || fname == "jnf" {
+                    &TEST_CASES_JN
+                } else {
+                    &TEST_CASES
+                };
+
+                let ulp = match ULP_OVERRIDES.iter().find(|(name, _val)| name == &fname) {
+                    Some((_name, val)) => *val,
+                    None => ALLOWED_ULP,
+                };
+
+
+                //     for input in cases {
+                //         f.assign(input.0);
+                //         f = f.asin();
+                //         let rres = f.to_f64();
+
+                //         // let mres = input.call(musl::asin as fn(f64) -> f64);
+                //         let cres = input.call(libm::asin as fn(f64) -> f64);
+
+                //         rres.validate(cres, input, ulp);
+                //     }
+
+                let cases = <CachedInput as GenerateInput<$RustArgs>>::get_cases(inputs);
+                let mut mp_res = (rug::Float::new(128),);
+
+                for input in cases {
+                    input.set_values(&mut mp_res);
+                    mp_res = mp_res.call(rug::Float::$rug_fn_name);
+
+                    let mp_res: $RustRet = mp_res.do_thing();
+
+                    // let mres = input.call(musl::$fn_name as $CFn);
+                    let cres = input.call(libm::$fn_name as $RustFn);
+
+                    mp_res.validate(cres, input, ulp);
+                }
+            }
+        }
     };
+}
 
-    let ulp = match ULP_OVERRIDES.iter().find(|(name, _val)| name == &fname) {
-        Some((_name, val)) => *val,
-        None => ALLOWED_ULP,
-    };
+libm_macros::for_each_function! {
+    callback: musl_rand_tests,
+    skip: [
+        expm1f,
+        fabs,
+        fabsf,
+        lgamma,
+        lgammaf,
+        rintf,
+        rint,
+        logf,
+        log,
+        log1p,
+        log1pf,
+        tgamma,
+        tgammaf,
+        expm1,
+        erf,
 
-    let cases = <CachedInput as GenerateInput<(f64,)>>::get_cases(inputs);
-    let mut f = rug::Float::new(128);
-
-    for input in cases {
-        f.assign(input.0);
-        f = f.asin();
-        let rres = f.to_f64();
-
-        // let mres = input.call(musl::asin as fn(f64) -> f64);
-        let cres = input.call(libm::asin as fn(f64) -> f64);
-
-        rres.validate(cres, input, ulp);
+        atan2f,
+        copysignf,
+        fdimf,
+        fmaxf,
+        fminf,
+        fmodf,
+        hypotf,
+        nextafterf,
+        powf,
+        remainderf,
+        atan2,
+        copysign,
+        fdim,
+        fmax,
+        fmin,
+        fmod,
+        hypot,
+        nextafter,
+        pow,
+        remainder,
+        fma,fmaf,ilogbf,ilogb,jnf,jn,scalbnf,ldexpf,scalbn,ldexp,
+        modff,modf,frexpf,lgammaf_r,frexp,lgamma_r,remquof,remquo,
+        sincosf,sincos,
+    ],
+    fn_extra: match MACRO_FN_NAME {
+        _ => MACRO_FN_NAME_NORMALIZED,
     }
 }

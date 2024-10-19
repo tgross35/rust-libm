@@ -5,18 +5,19 @@ edition = "2021"
 publish = false
 
 [features]
-default = []
+default = ["multiprecision-tests"]
 
 # Generate tests which are random inputs and the outputs are calculated with
 # musl libc.
 musl-bitwise-tests = ["rand"]
+multiprecision-tests = ["dep:az", "dep:rug"]
 
 [dependencies]
-az = "1.2.1"
+az = { version = "1.2.1", optional = true }
 libm = { path = "../.." }
 libm-macros = { path = "../libm-macros" }
 paste = "1.0.15"
-rug = { version = "1.26.1", default-features = false, features = ["float", "std"] }
+rug = { version = "1.26.1", optional = true, default-features = false, features = ["float", "std"] }
 
 # We can't build musl on MSVC or wasm
 [target.'cfg(not(any(target_env = "msvc", target_family = "wasm", target_feature = "thumb-mode")))'.dependencies]

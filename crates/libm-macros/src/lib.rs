@@ -582,7 +582,7 @@ impl MacroReplace {
             _ => {
                 self.error = Some(syn::Error::new(
                     i.span(),
-                    "unrecognized meta expression `{s}`",
+                    format!("unrecognized meta expression `{s}`"),
                 ));
             }
         }
