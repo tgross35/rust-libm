@@ -3,11 +3,11 @@ use std::collections::BTreeMap;
 use proc_macro2::Span;
 use quote::ToTokens;
 use syn::{
-    bracketed,
+    bracketed, parenthesized,
     parse::{Parse, ParseStream, Parser},
     punctuated::Punctuated,
     spanned::Spanned,
-    token::Comma,
+    token::{Comma, Paren},
     Arm, Attribute, Expr, ExprMatch, Ident, Meta, Token,
 };
 
@@ -144,7 +144,7 @@ fn extract_fn_extra_field(expr: Expr) -> syn::Result<BTreeMap<Ident, Expr>> {
 
         let keys = match pat {
             syn::Pat::Wild(w) => vec![Ident::new("_", w.span())],
-            _ => Parser::parse2(parse_ident_array, pat.into_token_stream())?,
+            _ => Parser::parse2(parse_ident_pat, pat.into_token_stream())?,
         };
 
         if let Some(guard) = guard {
@@ -206,6 +206,18 @@ fn parse_ident_array(input: ParseStream) -> syn::Result<Vec<Ident>> {
     let content;
     let _ = bracketed!(content in input);
     let fields = content.parse_terminated(Ident::parse, Token![,])?;
+    Ok(fields.into_iter().collect())
+}
+
+/// Parse an pattern of idents, specifically `(foo | bar | baz)`.
+fn parse_ident_pat(input: ParseStream) -> syn::Result<Vec<Ident>> {
+    if !input.peek(Paren) {
+        return Ok(vec![input.parse()?]);
+    }
+
+    let content;
+    let _ = parenthesized!(content in input);
+    let fields = Punctuated::<Ident, Token![|]>::parse_separated_nonempty(&content)?;
     Ok(fields.into_iter().collect())
 }
 

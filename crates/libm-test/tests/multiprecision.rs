@@ -7,9 +7,11 @@ use std::ffi::c_int;
 use std::sync::LazyLock;
 
 use az::Az;
+use libm_test::allowed_ulp;
 use libm_test::gen::CachedInput;
-use libm_test::rug_traits::Thing;
 use libm_test::rug_traits::ToSomething;
+use libm_test::rug_traits::TupleAssign;
+use libm_test::TRUE_DEFAULT_ULP;
 use libm_test::{CheckOutput, GenerateInput, TupleCall};
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaCha8Rng;
@@ -31,29 +33,6 @@ const NTESTS: usize = {
 
     ntests
 };
-
-/// ULP allowed to differ from musl (note that musl itself may not be accurate).
-const ALLOWED_ULP: u32 = 1;
-
-/// Certain functions have different allowed ULP (consider these xfail).
-///
-/// Currently this includes:
-/// - gamma functions that have higher errors
-/// - 32-bit functions fall back to a less precise algorithm.
-const ULP_OVERRIDES: &[(&str, u32)] = &[
-    // #[cfg(x86_no_sse)]
-    // ("asinhf", 6),
-    // ("lgamma", 6),
-    // ("lgamma_r", 6),
-    // ("lgammaf", 6),
-    // ("lgammaf_r", 6),
-    // ("tanh", 4),
-    // ("tgamma", 8),
-    // #[cfg(not(target_pointer_width = "64"))]
-    // ("exp10", 4),
-    // #[cfg(not(target_pointer_width = "64"))]
-    // ("exp10f", 4),
-];
 
 /// Tested inputs.
 static TEST_CASES: LazyLock<CachedInput> = LazyLock::new(|| make_test_cases(NTESTS));
@@ -94,78 +73,6 @@ fn make_test_cases(ntests: usize) -> CachedInput {
     }
 }
 
-// macro_rules! infinite_tests {
-//     (@each_signature
-//         SysArgsTupleTy: $_sys_argty:ty,
-//         RustArgsTupleTy: $argty:ty,
-//         SysFnTy: $fnty_sys:ty,
-//         RustFnTy: $fnty_rust:ty,
-//         functions: [$( {
-//             attrs: [$($fn_meta:meta),*],
-//             fn_name: $name:ident,
-//         } ),*],
-//     ) => { paste::paste! {
-//         $(
-//             #[test]
-//             $(#[$fn_meta])*
-//             fn [< musl_random_ $name >]() {
-//                 let fname = stringify!($name);
-//                 let inputs = if fname == "jn" || fname == "jnf" {
-//                     &TEST_CASES_JN
-//                 } else {
-//                     &TEST_CASES
-//                 };
-
-//                 let ulp = match ULP_OVERRIDES.iter().find(|(name, _val)| name == &fname) {
-//                     Some((_name, val)) => *val,
-//                     None => ALLOWED_ULP,
-//                 };
-
-//                 let cases = <CachedInput as GenerateInput<$argty>>::get_cases(inputs);
-//                 for input in cases {
-//                     let mres = input.call(musl::$name as $fnty_sys);
-//                     let cres = input.call(libm::$name as $fnty_rust);
-
-//                     mres.validate(cres, input, ulp);
-//                 }
-//             }
-//         )*
-//     } };
-
-//     (@all_items$($tt:tt)*) => {};
-// }
-
-// libm::for_each_function!(infinite_tests);
-
-// #[test]
-// fn foobar_arcsin() {
-//     let fname = stringify!(asin);
-//     let inputs = if fname == "jn" || fname == "jnf" {
-//         &TEST_CASES_JN
-//     } else {
-//         &TEST_CASES
-//     };
-
-//     let ulp = match ULP_OVERRIDES.iter().find(|(name, _val)| name == &fname) {
-//         Some((_name, val)) => *val,
-//         None => ALLOWED_ULP,
-//     };
-
-//     let cases = <CachedInput as GenerateInput<(f64,)>>::get_cases(inputs);
-//     let mut f = rug::Float::new(128);
-
-//     for input in cases {
-//         f.assign(input.0);
-//         f = f.asin();
-//         let rres = f.to_f64();
-
-//         // let mres = input.call(musl::asin as fn(f64) -> f64);
-//         let cres = input.call(libm::asin as fn(f64) -> f64);
-
-//         rres.validate(cres, input, ulp);
-//     }
-// }
-
 macro_rules! musl_rand_tests {
     (
         fn_name: $fn_name:ident,
@@ -175,7 +82,7 @@ macro_rules! musl_rand_tests {
         RustFn: $RustFn:ty,
         RustArgs: $RustArgs:ty,
         RustRet: $RustRet:ty,
-        // attrs: [$($meta:meta)*]
+        attrs: [$($meta:meta)*]
         fn_extra: $rug_fn_name:expr,
     ) => {
         paste::paste! {
@@ -189,29 +96,14 @@ macro_rules! musl_rand_tests {
                     &TEST_CASES
                 };
 
-                let ulp = match ULP_OVERRIDES.iter().find(|(name, _val)| name == &fname) {
-                    Some((_name, val)) => *val,
-                    None => ALLOWED_ULP,
-                };
-
-
-                //     for input in cases {
-                //         f.assign(input.0);
-                //         f = f.asin();
-                //         let rres = f.to_f64();
-
-                //         // let mres = input.call(musl::asin as fn(f64) -> f64);
-                //         let cres = input.call(libm::asin as fn(f64) -> f64);
-
-                //         rres.validate(cres, input, ulp);
-                //     }
+                let ulp = allowed_ulp(fname, TRUE_DEFAULT_ULP);
 
                 let cases = <CachedInput as GenerateInput<$RustArgs>>::get_cases(inputs);
-                let mut mp_res = (rug::Float::new(128),);
+                let mut mp_res = <$RustArgs>::new_mpfloat(128);
 
                 for input in cases {
                     input.set_values(&mut mp_res);
-                    mp_res = mp_res.call(rug::Float::$rug_fn_name);
+                    mp_res = mp_res.call($rug_fn_name);
 
                     let mp_res: $RustRet = mp_res.do_thing();
 
@@ -227,48 +119,57 @@ macro_rules! musl_rand_tests {
 
 libm_macros::for_each_function! {
     callback: musl_rand_tests,
+    attributes: [],
     skip: [
         expm1f,
-        fabs,
-        fabsf,
-        lgamma,
-        lgammaf,
         rintf,
         rint,
         logf,
         log,
         log1p,
         log1pf,
-        tgamma,
-        tgammaf,
         expm1,
         erf,
-
-        atan2f,
-        copysignf,
         fdimf,
-        fmaxf,
-        fminf,
+        // fmaxf,
+        // fminf,
         fmodf,
-        hypotf,
         nextafterf,
         powf,
-        remainderf,
-        atan2,
-        copysign,
         fdim,
-        fmax,
-        fmin,
+        // fmax,
+        // fmin,
         fmod,
-        hypot,
         nextafter,
         pow,
-        remainder,
-        fma,fmaf,ilogbf,ilogb,jnf,jn,scalbnf,ldexpf,scalbn,ldexp,
-        modff,modf,frexpf,lgammaf_r,frexp,lgamma_r,remquof,remquo,
-        sincosf,sincos,
+        fma,
+        fmaf,
+        ilogbf,
+        ilogb,
+        jnf,
+        jn,
+        scalbnf,
+        ldexpf,
+        scalbn,
+        ldexp,
+        modff,
+        modf,
+        frexpf,
+        lgammaf_r,
+        frexp,
+        lgamma_r,
+        remquof,
+        remquo,
+        sincosf,
+        sincos,
+
     ],
     fn_extra: match MACRO_FN_NAME {
-        _ => MACRO_FN_NAME_NORMALIZED,
+        (fabs | fabsf) => rug::Float::abs,
+        (lgamma | lgammaf) => rug::Float::ln_gamma,
+        (tgamma | tgammaf) => rug::Float::gamma,
+        (fmin | fminf) => rug::Float::min,
+        (fmax | fmaxf) => rug::Float::max,
+        _ => rug::Float::MACRO_FN_NAME_NORMALIZED,
     }
 }

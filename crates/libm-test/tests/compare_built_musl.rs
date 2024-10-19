@@ -17,7 +17,9 @@
 
 use std::sync::LazyLock;
 
+use libm_test::allowed_ulp;
 use libm_test::gen::CachedInput;
+use libm_test::MUSL_DEFAULT_ULP;
 use libm_test::{CheckOutput, GenerateInput, TupleCall};
 use musl_math_sys as musl;
 use rand::{Rng, SeedableRng};
@@ -39,29 +41,6 @@ const NTESTS: usize = {
 
     ntests
 };
-
-/// ULP allowed to differ from musl (note that musl itself may not be accurate).
-const ALLOWED_ULP: u32 = 2;
-
-/// Certain functions have different allowed ULP (consider these xfail).
-///
-/// Currently this includes:
-/// - gamma functions that have higher errors
-/// - 32-bit functions fall back to a less precise algorithm.
-const ULP_OVERRIDES: &[(&str, u32)] = &[
-    #[cfg(x86_no_sse)]
-    ("asinhf", 6),
-    ("lgamma", 6),
-    ("lgamma_r", 6),
-    ("lgammaf", 6),
-    ("lgammaf_r", 6),
-    ("tanh", 4),
-    ("tgamma", 8),
-    #[cfg(not(target_pointer_width = "64"))]
-    ("exp10", 4),
-    #[cfg(not(target_pointer_width = "64"))]
-    ("exp10f", 4),
-];
 
 /// Tested inputs.
 static TEST_CASES: LazyLock<CachedInput> = LazyLock::new(|| make_test_cases(NTESTS));
@@ -123,10 +102,7 @@ macro_rules! musl_rand_tests {
                 &TEST_CASES
             };
 
-            let ulp = match ULP_OVERRIDES.iter().find(|(name, _val)| name == &fname) {
-                Some((_name, val)) => *val,
-                None => ALLOWED_ULP,
-            };
+            let ulp = allowed_ulp(fname, MUSL_DEFAULT_ULP);
 
             let cases = <CachedInput as GenerateInput<$RustArgs>>::get_cases(inputs);
             for input in cases {
