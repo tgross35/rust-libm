@@ -9,7 +9,8 @@ use std::sync::LazyLock;
 use az::Az;
 use libm_test::allowed_ulp;
 use libm_test::gen::CachedInput;
-use libm_test::rug_traits::MpFloat;
+use libm_test::mpfloat::{self, MpFloat, MpOp};
+use libm_test::rug_traits::CreateThing;
 use libm_test::rug_traits::MpFloatThing;
 use libm_test::rug_traits::ToSomething;
 use libm_test::rug_traits::TupleAssign;
@@ -96,6 +97,8 @@ macro_rules! musl_rand_tests {
             #[test]
             $(#[$meta])*
             fn [< multiprec_random_ $fn_name >]() {
+                type MpOpTy = mpfloat::[< $fn_name:camel >];
+
                 let fname = stringify!($fn_name);
                 let inputs = if fname == "jn" || fname == "jnf" {
                     &TEST_CASES_JN
@@ -106,21 +109,13 @@ macro_rules! musl_rand_tests {
                 let ulp = allowed_ulp(fname, TRUE_DEFAULT_ULP);
 
                 let cases = <CachedInput as GenerateInput<$RustArgs>>::get_cases(inputs);
-                let mut mp_res = <$RustArgs>::new_mpfloat(128);
-                let mut x = <$RugFn as MpFloatThing<f64>>::create(128);
+                let mut mp_vals = MpOpTy::new();
 
                 for input in cases {
-                    // <$RugFn >::assign_values(input, &mut x);
+                    let mp_res = mp_vals.assign_run(input);
+                    let crate_res = input.call(libm::$fn_name as $RustFn);
 
-
-                    // input.set_values(&mut mp_res);
-                    // mp_res = mp_res.call($rug_expr as $RugFn);
-                    // let mp_res: $RustRet = mp_res.do_thing();
-
-                    // // let mres = input.call(musl::$fn_name as $CFn);
-                    // let cres = input.call(libm::$fn_name as $RustFn);
-
-                    // mp_res.validate(cres, input, ulp);
+                    mp_res.validate(crate_res, input, ulp);
                 }
             }
         }
@@ -131,17 +126,16 @@ libm_macros::for_each_function! {
     callback: musl_rand_tests,
     attributes: [],
     skip: [
-
-        acosf,acosh,acoshf,asin,asinf,asinh,asinhf,atan,atan2,atan2f,
-        atanf,atanh,atanhf,cbrt,cbrtf,ceil,ceilf,copysign,copysignf,cos,cosf,
-        cosh,coshf,erf,erff,exp,exp10,exp10f,exp2,exp2f,expf,expm1,expm1f,
+        atan2,atan2f,
+        copysign,copysignf,
+        expm1,expm1f,
         fabs,fabsf,fdim,fdimf,floor,floorf,fma,fmaf,fmax,fmaxf,
         fmin,fminf,fmod,fmodf,frexp,frexpf,hypot,hypotf,ilogb,ilogbf,j0,j0f,
-        j1,j1f,jn,jnf,ldexp,ldexpf,lgamma,lgamma_r,lgammaf,lgammaf_r,log,log10,
-        log10f,log1p,log1pf,log2,log2f,logf,modf,modff,nextafter,nextafterf,pow,powf,
+        j1,j1f,jn,jnf,ldexp,ldexpf,lgamma,lgamma_r,lgammaf,lgammaf_r,
+        modf,modff,nextafter,nextafterf,pow,powf,
         remainder,remainderf,remquo,remquof,rint,rintf,
         round,roundf,scalbn,scalbnf,sin,sincos,sincosf,sinf,sinh,sinhf,sqrt,sqrtf,
-        tan,tanf,tanh,tanhf,tgamma,tgammaf,trunc,truncf,
+        tgamma,tgammaf,trunc,truncf,
 
         frexp,
         frexpf,

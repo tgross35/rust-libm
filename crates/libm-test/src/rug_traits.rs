@@ -7,24 +7,51 @@ pub use rug::Float as MpFloat;
 
 use crate::TupleCall;
 
-pub trait MpFloatThing<FloatTy> {
-    type Vals;
-    type Inputs;
+pub trait MpFloatThing<Inputs>: CreateThing {
     type Outputs;
-    fn create(prec: u32) -> Self::Vals;
-    fn assign_values(input: Self::Inputs, dst: &mut Self::Vals);
+    // fn create(prec: u32) -> Self::Vals;
+    fn assign_values(input: Inputs, dst: &mut Self::Vals);
     fn output(mp_output: &Self::Vals) -> Self::Outputs;
 }
 
-impl MpFloatThing<f32> for fn(MpFloat) -> MpFloat {
-    type Vals = (MpFloat,);
-    type Inputs = (f32,);
-    type Outputs = f32;
+pub trait CreateThing {
+    type Vals;
 
-    fn create(prec: u32) -> Self::Vals {
+    fn create_thing(prec: u32) -> Self::Vals;
+}
+
+impl CreateThing for fn(MpFloat) -> MpFloat {
+    type Vals = (MpFloat,);
+
+    fn create_thing(prec: u32) -> Self::Vals {
         (MpFloat::new(prec),)
     }
-    fn assign_values(input: Self::Inputs, dst: &mut Self::Vals) {
+}
+
+// impl MpFloatThing<f32> for fn(MpFloat) -> MpFloat {
+//     // type Vals = (MpFloat,);
+//     type Outputs = f32;
+
+//     // fn create(prec: u32) -> Self::Vals {
+//     //     (MpFloat::new(prec),)
+//     // }
+//     fn assign_values(input: Self::Inputs, dst: &mut Self::Vals) {
+//         dst.0.assign(input.0);
+//     }
+//     fn output(mp_output: &Self::Vals) -> Self::Outputs {
+//         mp_output.0.to_f32()
+//     }
+// }
+
+impl MpFloatThing<(f32,)> for fn(MpFloat) -> MpFloat {
+    // type Vals = (MpFloat,);
+    // type Inputs = (f32,);
+    type Outputs = f32;
+
+    // fn create(prec: u32) -> Self::Vals {
+    //     (MpFloat::new(prec),)
+    // }
+    fn assign_values(input: (f32,), dst: &mut Self::Vals) {
         dst.0.assign(input.0);
     }
     fn output(mp_output: &Self::Vals) -> Self::Outputs {
@@ -32,15 +59,15 @@ impl MpFloatThing<f32> for fn(MpFloat) -> MpFloat {
     }
 }
 
-impl MpFloatThing<f64> for fn(MpFloat) -> MpFloat {
-    type Vals = (MpFloat,);
-    type Inputs = (f64,);
+impl MpFloatThing<(f64,)> for fn(MpFloat) -> MpFloat {
+    // type Vals = (MpFloat,);
+    // type Inputs = (f64,);
     type Outputs = f64;
 
-    fn create(prec: u32) -> Self::Vals {
-        (MpFloat::new(prec),)
-    }
-    fn assign_values(input: Self::Inputs, dst: &mut Self::Vals) {
+    // fn create(prec: u32) -> Self::Vals {
+    //     (MpFloat::new(prec),)
+    // }
+    fn assign_values(input: (f64,), dst: &mut Self::Vals) {
         dst.0.assign(input.0);
     }
     fn output(mp_output: &Self::Vals) -> Self::Outputs {
