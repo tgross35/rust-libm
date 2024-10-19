@@ -141,49 +141,49 @@ impl TupleAssign<(MpFloat, MpFloat, MpFloat)> for (f64, f64, f64) {
     }
 }
 
-impl TupleCall<fn(MpFloat) -> MpFloat> for (MpFloat,) {
-    type Output = (MpFloat,);
+// impl TupleCall<fn(MpFloat) -> MpFloat> for (MpFloat,) {
+//     type Output = (MpFloat,);
 
-    fn call(self, f: fn(MpFloat) -> MpFloat) -> Self::Output {
-        (f(self.0),)
-    }
-}
+//     fn call(self, f: fn(MpFloat) -> MpFloat) -> Self::Output {
+//         (f(self.0),)
+//     }
+// }
 
-// e.g. `atan2`
-impl TupleCall<fn(MpFloat, &MpFloat) -> MpFloat> for (MpFloat, MpFloat) {
-    type Output = (MpFloat, MpFloat);
+// // e.g. `atan2`
+// impl TupleCall<fn(MpFloat, &MpFloat) -> MpFloat> for (MpFloat, MpFloat) {
+//     type Output = (MpFloat, MpFloat);
 
-    fn call(self, f: fn(MpFloat, &MpFloat) -> MpFloat) -> Self::Output {
-        (f(self.0, &self.1), self.1)
-    }
-}
+//     fn call(self, f: fn(MpFloat, &MpFloat) -> MpFloat) -> Self::Output {
+//         (f(self.0, &self.1), self.1)
+//     }
+// }
 
-impl TupleCall<fn(MpFloat, &MpFloat) -> (MpFloat, MpFloat)> for (MpFloat, MpFloat) {
-    type Output = (MpFloat, MpFloat);
+// impl TupleCall<fn(MpFloat, &MpFloat) -> (MpFloat, MpFloat)> for (MpFloat, MpFloat) {
+//     type Output = (MpFloat, MpFloat);
 
-    fn call(self, f: fn(MpFloat, &MpFloat) -> (MpFloat, MpFloat)) -> Self::Output {
-        // (f(self.0, &self.1), self.1)
-        todo!()
-    }
-}
+//     fn call(self, f: fn(MpFloat, &MpFloat) -> (MpFloat, MpFloat)) -> Self::Output {
+//         // (f(self.0, &self.1), self.1)
+//         todo!()
+//     }
+// }
 
-// e.g. `jn`
-impl TupleCall<fn(MpFloat, i32) -> MpFloat> for (i32, MpFloat) {
-    type Output = (i32, MpFloat);
+// // e.g. `jn`
+// impl TupleCall<fn(MpFloat, i32) -> MpFloat> for (i32, MpFloat) {
+//     type Output = (i32, MpFloat);
 
-    fn call(self, f: fn(MpFloat, i32) -> MpFloat) -> Self::Output {
-        (0, f(self.1, self.0))
-    }
-}
+//     fn call(self, f: fn(MpFloat, i32) -> MpFloat) -> Self::Output {
+//         (0, f(self.1, self.0))
+//     }
+// }
 
-// e.g. manual fma
-impl TupleCall<fn(MpFloat, &MpFloat, &MpFloat) -> MpFloat> for (MpFloat, MpFloat, MpFloat) {
-    type Output = (MpFloat, MpFloat, MpFloat);
+// // e.g. manual fma
+// impl TupleCall<fn(MpFloat, &MpFloat, &MpFloat) -> MpFloat> for (MpFloat, MpFloat, MpFloat) {
+//     type Output = (MpFloat, MpFloat, MpFloat);
 
-    fn call(self, f: fn(MpFloat, &MpFloat, &MpFloat) -> MpFloat) -> Self::Output {
-        (f(self.0, &self.1, &self.2), self.1, self.2)
-    }
-}
+//     fn call(self, f: fn(MpFloat, &MpFloat, &MpFloat) -> MpFloat) -> Self::Output {
+//         (f(self.0, &self.1, &self.2), self.1, self.2)
+//     }
+// }
 
 pub trait ToSomething<Dest> {
     fn do_thing(&self) -> Dest;

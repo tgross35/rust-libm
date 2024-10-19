@@ -8,7 +8,6 @@
 //!   expected value.
 
 use crate::{Float, Hex, Int};
-use std::ffi::c_int;
 use std::fmt;
 
 /// Implement this on types that can generate a sequence of tuples for test input.
@@ -33,7 +32,10 @@ pub trait CheckOutput<Input>: Sized {
     fn validate(self, expected: Self, input: Input, allowed_ulp: u32);
 }
 
-impl<T1, R> TupleCall<fn(T1) -> R> for (T1,) {
+impl<T1, R> TupleCall<fn(T1) -> R> for (T1,)
+where
+    T1: fmt::Debug,
+{
     type Output = R;
 
     fn call(self, f: fn(T1) -> R) -> Self::Output {
@@ -41,7 +43,11 @@ impl<T1, R> TupleCall<fn(T1) -> R> for (T1,) {
     }
 }
 
-impl<T1, T2, R> TupleCall<fn(T1, T2) -> R> for (T1, T2) {
+impl<T1, T2, R> TupleCall<fn(T1, T2) -> R> for (T1, T2)
+where
+    T1: fmt::Debug,
+    T2: fmt::Debug,
+{
     type Output = R;
 
     fn call(self, f: fn(T1, T2) -> R) -> Self::Output {
@@ -49,7 +55,25 @@ impl<T1, T2, R> TupleCall<fn(T1, T2) -> R> for (T1, T2) {
     }
 }
 
-impl<T1, T2, T3, R> TupleCall<fn(T1, T2, T3) -> R> for (T1, T2, T3) {
+impl<T1, T2, R> TupleCall<fn(T1, &mut T2) -> R> for (T1,)
+where
+    T1: fmt::Debug,
+    T2: fmt::Debug + Default,
+{
+    type Output = (R, T2);
+
+    fn call(self, f: fn(T1, &mut T2) -> R) -> Self::Output {
+        let mut t2 = T2::default();
+        (f(self.0, &mut t2), t2)
+    }
+}
+
+impl<T1, T2, T3, R> TupleCall<fn(T1, T2, T3) -> R> for (T1, T2, T3)
+where
+    T1: fmt::Debug,
+    T2: fmt::Debug,
+    T3: fmt::Debug,
+{
     type Output = R;
 
     fn call(self, f: fn(T1, T2, T3) -> R) -> Self::Output {
@@ -57,135 +81,35 @@ impl<T1, T2, T3, R> TupleCall<fn(T1, T2, T3) -> R> for (T1, T2, T3) {
     }
 }
 
-/// Implement `TupleCall` for signatures with no `&mut`.
-macro_rules! impl_tupl_call {
-    ($( ($($argty:ty),*) -> $ret:ty; )+) => {
-        $(
-            impl TupleCall<fn( $($argty),* ) -> $ret> for ( $($argty,)* ) {
-                type Output = $ret;
+impl<T1, T2, T3, R> TupleCall<fn(T1, T2, &mut T3) -> R> for (T1, T2)
+where
+    T1: fmt::Debug,
+    T2: fmt::Debug,
+    T3: fmt::Debug + Default,
+{
+    type Output = (R, T3);
 
-                fn call(self, f: fn($($argty),*) -> $ret) -> Self::Output {
-                    impl_tupl_call!(@call f, self, $($argty),*)
-                }
-            }
-        )*
-    };
-
-    (@call $f:ident, $this:ident, $a1:ty, $a2:ty, $a3:ty) => {
-        $f($this.0, $this.1, $this.2)
-    };
-    (@call $f:ident, $this:ident, $a1:ty, $a2:ty) => {
-        $f($this.0, $this.1)
-    };
-    (@call $f:ident, $this:ident, $a1:ty) => {
-        $f($this.0)
-    };
+    fn call(self, f: fn(T1, T2, &mut T3) -> R) -> Self::Output {
+        let mut t3 = T3::default();
+        (f(self.0, self.1, &mut t3), t3)
+    }
 }
 
-// impl_tupl_call! {
-//     (f32) -> f32;
-//     (f64) -> f64;
-//     (f32) -> i32;
-//     (f64) -> i32;
-//     (f32, f32) -> f32;
-//     (f64, f64) -> f64;
-//     (f32, i32) -> f32;
-//     (f64, i32) -> f64;
-//     (i32, f32) -> f32;
-//     (i32, f64) -> f64;
-//     (f32, f32, f32) -> f32;
-//     (f64, f64, f64) -> f64;
-//     (f32) -> (f32, f32);
-//     (f64) -> (f64, f64);
-//     (f32) -> (f32, c_int);
-//     (f64) -> (f64, c_int);
-//     (f32, f32) -> (f32, c_int);
-//     (f64, f64) -> (f64, c_int);
-// }
+impl<T1, T2, T3> TupleCall<fn(T1, &mut T2, &mut T3)> for (T1,)
+where
+    T1: fmt::Debug,
+    T2: fmt::Debug + Default,
+    T3: fmt::Debug + Default,
+{
+    type Output = (T2, T3);
 
-// /* Implement `TupleCall` for signatures that use `&mut` (i.e. system symbols that return
-//  * more than one value) */
-// impl TupleCall<fn(f32, &mut c_int) -> f32> for (f32,) {
-//     type Output = (f32, c_int);
-
-//     fn call(self, f: fn(f32, &mut c_int) -> f32) -> Self::Output {
-//         let mut iret = 0;
-//         let fret = f(self.0, &mut iret);
-//         (fret, iret)
-//     }
-// }
-
-// impl TupleCall<fn(f64, &mut c_int) -> f64> for (f64,) {
-//     type Output = (f64, c_int);
-
-//     fn call(self, f: fn(f64, &mut c_int) -> f64) -> Self::Output {
-//         let mut iret = 0;
-//         let fret = f(self.0, &mut iret);
-//         (fret, iret)
-//     }
-// }
-
-// impl TupleCall<fn(f32, &mut f32) -> f32> for (f32,) {
-//     type Output = (f32, f32);
-
-//     fn call(self, f: fn(f32, &mut f32) -> f32) -> Self::Output {
-//         let mut ret2 = 0.0;
-//         let ret1 = f(self.0, &mut ret2);
-//         (ret1, ret2)
-//     }
-// }
-
-// impl TupleCall<fn(f64, &mut f64) -> f64> for (f64,) {
-//     type Output = (f64, f64);
-
-//     fn call(self, f: fn(f64, &mut f64) -> f64) -> Self::Output {
-//         let mut ret2 = 0.0;
-//         let ret1 = f(self.0, &mut ret2);
-//         (ret1, ret2)
-//     }
-// }
-
-// impl TupleCall<fn(f32, f32, &mut c_int) -> f32> for (f32, f32) {
-//     type Output = (f32, c_int);
-
-//     fn call(self, f: fn(f32, f32, &mut c_int) -> f32) -> Self::Output {
-//         let mut iret = 0;
-//         let fret = f(self.0, self.1, &mut iret);
-//         (fret, iret)
-//     }
-// }
-
-// impl TupleCall<fn(f64, f64, &mut c_int) -> f64> for (f64, f64) {
-//     type Output = (f64, c_int);
-
-//     fn call(self, f: fn(f64, f64, &mut c_int) -> f64) -> Self::Output {
-//         let mut iret = 0;
-//         let fret = f(self.0, self.1, &mut iret);
-//         (fret, iret)
-//     }
-// }
-
-// impl TupleCall<fn(f32, &mut f32, &mut f32)> for (f32,) {
-//     type Output = (f32, f32);
-
-//     fn call(self, f: fn(f32, &mut f32, &mut f32)) -> Self::Output {
-//         let mut ret1 = 0.0;
-//         let mut ret2 = 0.0;
-//         f(self.0, &mut ret1, &mut ret2);
-//         (ret1, ret2)
-//     }
-// }
-
-// impl TupleCall<fn(f64, &mut f64, &mut f64)> for (f64,) {
-//     type Output = (f64, f64);
-
-//     fn call(self, f: fn(f64, &mut f64, &mut f64)) -> Self::Output {
-//         let mut ret1 = 0.0;
-//         let mut ret2 = 0.0;
-//         f(self.0, &mut ret1, &mut ret2);
-//         (ret1, ret2)
-//     }
-// }
+    fn call(self, f: fn(T1, &mut T2, &mut T3)) -> Self::Output {
+        let mut t2 = T2::default();
+        let mut t3 = T3::default();
+        f(self.0, &mut t2, &mut t3);
+        (t2, t3)
+    }
+}
 
 // Implement for floats
 impl<F, Input> CheckOutput<Input> for F

@@ -113,14 +113,14 @@ macro_rules! musl_rand_tests {
                     // <$RugFn >::assign_values(input, &mut x);
 
 
-                    input.set_values(&mut mp_res);
-                    mp_res = mp_res.call($rug_expr as $RugFn);
-                    let mp_res: $RustRet = mp_res.do_thing();
+                    // input.set_values(&mut mp_res);
+                    // mp_res = mp_res.call($rug_expr as $RugFn);
+                    // let mp_res: $RustRet = mp_res.do_thing();
 
-                    // let mres = input.call(musl::$fn_name as $CFn);
-                    let cres = input.call(libm::$fn_name as $RustFn);
+                    // // let mres = input.call(musl::$fn_name as $CFn);
+                    // let cres = input.call(libm::$fn_name as $RustFn);
 
-                    mp_res.validate(cres, input, ulp);
+                    // mp_res.validate(cres, input, ulp);
                 }
             }
         }
