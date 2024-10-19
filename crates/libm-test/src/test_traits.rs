@@ -33,6 +33,8 @@ pub trait CheckOutput<Input>: Sized {
     fn validate(self, expected: Self, input: Input, allowed_ulp: u32);
 }
 
+// impl<T1, R> TupleCall<T1, R
+
 /// Implement `TupleCall` for signatures with no `&mut`.
 macro_rules! impl_tupl_call {
     ($( ($($argty:ty),*) -> $ret:ty; )+) => {

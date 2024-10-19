@@ -7,6 +7,47 @@ pub use rug::Float as MpFloat;
 
 use crate::TupleCall;
 
+pub trait MpFloatThing<FloatTy> {
+    type Vals;
+    type Inputs;
+    type Outputs;
+    fn create(prec: u32) -> Self::Vals;
+    fn assign_values(input: Self::Inputs, dst: &mut Self::Vals);
+    fn output(mp_output: &Self::Vals) -> Self::Outputs;
+}
+
+impl MpFloatThing<f32> for fn(MpFloat) -> MpFloat {
+    type Vals = (MpFloat,);
+    type Inputs = (f32,);
+    type Outputs = f32;
+
+    fn create(prec: u32) -> Self::Vals {
+        (MpFloat::new(prec),)
+    }
+    fn assign_values(input: Self::Inputs, dst: &mut Self::Vals) {
+        dst.0.assign(input.0);
+    }
+    fn output(mp_output: &Self::Vals) -> Self::Outputs {
+        mp_output.0.to_f32()
+    }
+}
+
+impl MpFloatThing<f64> for fn(MpFloat) -> MpFloat {
+    type Vals = (MpFloat,);
+    type Inputs = (f64,);
+    type Outputs = f64;
+
+    fn create(prec: u32) -> Self::Vals {
+        (MpFloat::new(prec),)
+    }
+    fn assign_values(input: Self::Inputs, dst: &mut Self::Vals) {
+        dst.0.assign(input.0);
+    }
+    fn output(mp_output: &Self::Vals) -> Self::Outputs {
+        mp_output.0.to_f64()
+    }
+}
+
 pub trait TupleAssign<RugTy> {
     fn new_mpfloat(prec: u32) -> RugTy;
     fn set_values(self, dst: &mut RugTy);
@@ -114,6 +155,15 @@ impl TupleCall<fn(MpFloat, &MpFloat) -> MpFloat> for (MpFloat, MpFloat) {
 
     fn call(self, f: fn(MpFloat, &MpFloat) -> MpFloat) -> Self::Output {
         (f(self.0, &self.1), self.1)
+    }
+}
+
+impl TupleCall<fn(MpFloat, &MpFloat) -> (MpFloat, MpFloat)> for (MpFloat, MpFloat) {
+    type Output = (MpFloat, MpFloat);
+
+    fn call(self, f: fn(MpFloat, &MpFloat) -> (MpFloat, MpFloat)) -> Self::Output {
+        // (f(self.0, &self.1), self.1)
+        todo!()
     }
 }
 

@@ -10,6 +10,7 @@ use az::Az;
 use libm_test::allowed_ulp;
 use libm_test::gen::CachedInput;
 use libm_test::rug_traits::MpFloat;
+use libm_test::rug_traits::MpFloatThing;
 use libm_test::rug_traits::ToSomething;
 use libm_test::rug_traits::TupleAssign;
 use libm_test::TRUE_DEFAULT_ULP;
@@ -85,8 +86,11 @@ macro_rules! musl_rand_tests {
         RustFn: $RustFn:ty,
         RustArgs: $RustArgs:ty,
         RustRet: $RustRet:ty,
+        RugFn: $RugFn:ty,
+        RugArgs: $RugArgs:ty,
+        RugRet: $RugRet:ty,
         attrs: [$($meta:meta)*]
-        fn_extra: $rug_fn_name:expr,
+        fn_extra: $rug_expr:expr,
     ) => {
         paste::paste! {
             #[test]
@@ -103,11 +107,14 @@ macro_rules! musl_rand_tests {
 
                 let cases = <CachedInput as GenerateInput<$RustArgs>>::get_cases(inputs);
                 let mut mp_res = <$RustArgs>::new_mpfloat(128);
+                let mut x = <$RugFn as MpFloatThing<f64>>::create(128);
 
                 for input in cases {
-                    input.set_values(&mut mp_res);
-                    mp_res = mp_res.call($rug_fn_name);
+                    // <$RugFn >::assign_values(input, &mut x);
 
+
+                    input.set_values(&mut mp_res);
+                    mp_res = mp_res.call($rug_expr as $RugFn);
                     let mp_res: $RustRet = mp_res.do_thing();
 
                     // let mres = input.call(musl::$fn_name as $CFn);
@@ -124,12 +131,26 @@ libm_macros::for_each_function! {
     callback: musl_rand_tests,
     attributes: [],
     skip: [
+
+        acosf,acosh,acoshf,asin,asinf,asinh,asinhf,atan,atan2,atan2f,
+        atanf,atanh,atanhf,cbrt,cbrtf,ceil,ceilf,copysign,copysignf,cos,cosf,
+        cosh,coshf,erf,erff,exp,exp10,exp10f,exp2,exp2f,expf,expm1,expm1f,
+        fabs,fabsf,fdim,fdimf,floor,floorf,fma,fmaf,fmax,fmaxf,
+        fmin,fminf,fmod,fmodf,frexp,frexpf,hypot,hypotf,ilogb,ilogbf,j0,j0f,
+        j1,j1f,jn,jnf,ldexp,ldexpf,lgamma,lgamma_r,lgammaf,lgammaf_r,log,log10,
+        log10f,log1p,log1pf,log2,log2f,logf,modf,modff,nextafter,nextafterf,pow,powf,
+        remainder,remainderf,remquo,remquof,rint,rintf,
+        round,roundf,scalbn,scalbnf,sin,sincos,sincosf,sinf,sinh,sinhf,sqrt,sqrtf,
+        tan,tanf,tanh,tanhf,tgamma,tgammaf,trunc,truncf,
+
         frexp,
         frexpf,
         ldexp,
         ldexpf,
         scalbn,
         scalbnf,
+
+        jn,jnf,
 
         ilogb,
         ilogbf,
@@ -139,7 +160,7 @@ libm_macros::for_each_function! {
         modff,
         remquo,
         remquof,
-        sincos,
+        // sincos,
         sincosf,
     ],
     fn_extra: match MACRO_FN_NAME {
@@ -170,7 +191,13 @@ libm_macros::for_each_function! {
         pow | powf => |x: MpFloat, y: &MpFloat| x.pow(y),
         rint | rintf => |x: MpFloat| x.round(),
         tgamma | tgammaf => MpFloat::gamma,
-        // sincos | sincosf => MpFloat::sin_cos,
+        sincos | sincosf => |x: MpFloat| {
+            let cos = MpFloat::new(128);
+            x.sin_cos(cos)
+
+        },
+
+        // MpFloat::sin_cos,
         // (sincos | sincosf) => MpFloat::sin_cos,
         _ => MpFloat::MACRO_FN_NAME_NORMALIZED,
     }

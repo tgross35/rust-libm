@@ -10,6 +10,9 @@ macro_rules! basic {
         RustFn: $RustFn:ty,
         RustArgs: $RustArgs:ty,
         RustRet: $RustRet:ty,
+        RugFn: $RugFn:ty,
+        RugArgs: $RugArgs:ty,
+        RugRet: $RugRet:ty,
         attrs: [$($meta:meta)*]
         extra: [$($extra_tt:tt)*],
         fn_extra: $fn_extra:expr,
@@ -64,6 +67,9 @@ macro_rules! basic_no_extra {
         RustFn: $RustFn:ty,
         RustArgs: $RustArgs:ty,
         RustRet: $RustRet:ty,
+        RugFn: $RugFn:ty,
+        RugArgs: $RugArgs:ty,
+        RugRet: $RugRet:ty,
     ) => {
         mod $fn_name {
             #[allow(unused)]
