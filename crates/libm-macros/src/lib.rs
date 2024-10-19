@@ -384,7 +384,7 @@ static ALL_FUNCTIONS_FLAT: LazyLock<Vec<FunctionInfo>> = LazyLock::new(|| {
 ///     // Similar to `extra`, but allow providing a pattern for only specific functions. Uses
 ///     // a simplified match-like syntax.
 ///     fn_extra: match MACRO_FN_NAME {
-///         [hypot, hypotf] => |x| x.hypot(),
+///         hypot | hypotf => |x| x.hypot(),
 ///         _ => |x| x,
 ///     },
 /// }

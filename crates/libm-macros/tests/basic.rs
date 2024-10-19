@@ -48,8 +48,8 @@ mod test_basic {
         ],
         extra: ["foo", "bar"],
         fn_extra: match MACRO_FN_NAME {
-            [sin] => |x| x + 2.0,
-            [cos, cosf] => |x: f32| x.MACRO_FN_NAME_NORMALIZED(),
+            sin => |x| x + 2.0,
+            cos | cosf => |x: f32| x.MACRO_FN_NAME_NORMALIZED(),
             _ => |_x| 100.0
         }
     }
