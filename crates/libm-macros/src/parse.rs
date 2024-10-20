@@ -54,7 +54,6 @@ pub struct StructuredInput {
     pub fn_extra: Option<BTreeMap<Ident, Expr>>,
     // For diagnostics
     pub only_span: Option<Span>,
-    pub skip_span: Option<Span>,
     pub fn_extra_span: Option<Span>,
 }
 
@@ -75,7 +74,6 @@ impl StructuredInput {
             ))?;
         }
 
-        let skip_span = skip_expr.as_ref().map(|expr| expr.span());
         let skip = match skip_expr {
             Some(expr) => Parser::parse2(parse_ident_array, expr.into_token_stream())?,
             None => Vec::new(),
@@ -109,7 +107,6 @@ impl StructuredInput {
         Ok(Self {
             callback: expect_ident(cb_expr)?,
             skip,
-            skip_span,
             only,
             only_span,
             attributes,

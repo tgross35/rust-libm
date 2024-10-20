@@ -104,7 +104,7 @@ macro_rules! musl_rand_tests {
                 let mut mp_vals = MpOpTy::new();
 
                 for input in cases {
-                    let mp_res = mp_vals.assign_run(input);
+                    let mp_res = mp_vals.run(input);
                     let crate_res = input.call(libm::$fn_name as $RustFn);
 
                     mp_res.validate(crate_res, input, ulp);

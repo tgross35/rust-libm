@@ -1,37 +1,53 @@
-use az::Az;
+//! Interfaces needed to support testing with multi-precision floating point numbers.
+//!
+//! Within this module, the macros create a submodule for each `libm` function. These contain
+//! a struct named `Operation` that implements [`MpOp`].
+
 use std::ops::RemAssign;
-// use rug::ops::Pow;
+
+use az::Az;
 use rug::ops::PowAssign;
 use rug::Assign;
 pub use rug::Float as MpFloat;
 
 use crate::Float;
 
-/// Create a multiprecision float with the correct number of bits to keep precision.
+/// Create a multiple-precision float with the correct number of bits for a concrete float type.
 fn new_mpfloat<F: Float>() -> MpFloat {
     MpFloat::new(F::SIGNIFICAND_BITS + 1)
 }
 
+/// Set subnormal emulation and convert to a concrete float type.
 fn prep_retval<F: Float>(mp: &mut MpFloat) -> F
 where
-    for<'b> &'b MpFloat: az::Cast<F>,
+    for<'a> &'a MpFloat: az::Cast<F>,
 {
     mp.subnormalize_ieee();
-    let mp = &*mp;
-    mp.az::<F>()
+    (&*mp).az::<F>()
 }
 
+/// Structures that represent a float operation.
 ///
+/// The struct itself should hold any context that can be reused among calls to `run` (allocated
+/// `MpFloat`s).
 pub trait MpOp {
+    /// Inputs to the operation (concrete float types).
     type Input;
+
+    /// Outputs from the operation (concrete float types).
     type Output;
-    /// Create
+
+    /// Create a new instance.
     fn new() -> Self;
+
+    /// Perform the operation.
     ///
-    fn assign_run(&mut self, input: Self::Input) -> Self::Output;
+    /// Usually this means assigning inputs to cached floats, performing the operation, applying
+    /// subnormal approximation, and converting the result back to concrete values.
+    fn run(&mut self, input: Self::Input) -> Self::Output;
 }
 
-/// Implement
+/// Implement `MpOp` for functions with a single return value.
 macro_rules! impl_mp_op {
     // Matcher for unary functions
     (
@@ -57,7 +73,7 @@ macro_rules! impl_mp_op {
                         Self(new_mpfloat::<$fty>())
                     }
 
-                    fn assign_run(&mut self, input: Self::Input) -> Self::Output {
+                    fn run(&mut self, input: Self::Input) -> Self::Output {
                         self.0.assign(input.0);
                         self.0.[< $fn_name_normalized _mut >]();
                         prep_retval::<Self::Output>(&mut self.0)
@@ -90,7 +106,7 @@ macro_rules! impl_mp_op {
                         Self(new_mpfloat::<$fty>(), new_mpfloat::<$fty>())
                     }
 
-                    fn assign_run(&mut self, input: Self::Input) -> Self::Output {
+                    fn run(&mut self, input: Self::Input) -> Self::Output {
                         self.0.assign(input.0);
                         self.1.assign(input.1);
                         self.0.[< $fn_name_normalized _mut >](&self.1);
@@ -124,7 +140,7 @@ macro_rules! impl_mp_op {
                         Self(new_mpfloat::<$fty>(), new_mpfloat::<$fty>(), new_mpfloat::<$fty>())
                     }
 
-                    fn assign_run(&mut self, input: Self::Input) -> Self::Output {
+                    fn run(&mut self, input: Self::Input) -> Self::Output {
                         self.0.assign(input.0);
                         self.1.assign(input.1);
                         self.2.assign(input.2);
@@ -163,11 +179,8 @@ libm_macros::for_each_function! {
 }
 
 /// Some functions are difficult to do in a generic way. Implement them here.
-macro_rules! impl_for_both {
-    // Matcher for unary functions
-    (
-        $fty:ty, $suffix:literal
-    ) => {
+macro_rules! impl_op_for_ty {
+    ($fty:ty, $suffix:literal) => {
         paste::paste! {
             pub mod [<nextafter $suffix>] {
                 use super::*;
@@ -181,7 +194,7 @@ macro_rules! impl_for_both {
                         Self(new_mpfloat::<$fty>(), new_mpfloat::<$fty>())
                     }
 
-                    fn assign_run(&mut self, input: Self::Input) -> Self::Output {
+                    fn run(&mut self, input: Self::Input) -> Self::Output {
                         self.0.assign(input.0);
                         self.1.assign(input.1);
                         self.0.next_toward(&self.1);
@@ -202,7 +215,7 @@ macro_rules! impl_for_both {
                         Self(new_mpfloat::<$fty>(), new_mpfloat::<$fty>())
                     }
 
-                    fn assign_run(&mut self, input: Self::Input) -> Self::Output {
+                    fn run(&mut self, input: Self::Input) -> Self::Output {
                         self.0.assign(input.0);
                         self.1.assign(input.1);
                         self.0.pow_assign(&self.1);
@@ -223,7 +236,7 @@ macro_rules! impl_for_both {
                         Self(new_mpfloat::<$fty>(), new_mpfloat::<$fty>())
                     }
 
-                    fn assign_run(&mut self, input: Self::Input) -> Self::Output {
+                    fn run(&mut self, input: Self::Input) -> Self::Output {
                         self.0.assign(input.0);
                         self.1.assign(input.1);
                         self.0.rem_assign(&self.1);
@@ -244,7 +257,7 @@ macro_rules! impl_for_both {
                         Self(new_mpfloat::<$fty>())
                     }
 
-                    fn assign_run(&mut self, input: Self::Input) -> Self::Output {
+                    fn run(&mut self, input: Self::Input) -> Self::Output {
                         self.0.assign(input.0);
                         let ordering = self.0.ln_abs_gamma_mut();
                         let ret = prep_retval::<$fty>(&mut self.0);
@@ -265,7 +278,7 @@ macro_rules! impl_for_both {
                         Self(0, new_mpfloat::<$fty>())
                     }
 
-                    fn assign_run(&mut self, input: Self::Input) -> Self::Output {
+                    fn run(&mut self, input: Self::Input) -> Self::Output {
                         self.0 = input.0;
                         self.1.assign(input.1);
                         self.1.jn_mut(self.0);
@@ -286,7 +299,7 @@ macro_rules! impl_for_both {
                         Self(new_mpfloat::<$fty>(), new_mpfloat::<$fty>())
                     }
 
-                    fn assign_run(&mut self, input: Self::Input) -> Self::Output {
+                    fn run(&mut self, input: Self::Input) -> Self::Output {
                         self.0.assign(input.0);
                         self.1.assign(0.0);
                         self.0.sin_cos_mut(&mut self.1);
@@ -298,10 +311,10 @@ macro_rules! impl_for_both {
     };
 }
 
-impl_for_both!(f32, "f");
-impl_for_both!(f64, "");
+impl_op_for_ty!(f32, "f");
+impl_op_for_ty!(f64, "");
 
-// Account for `lgamma_r` not having `f` as a suffix
+// Account for `lgamma_r` not having a simple `f` suffix
 pub mod lgammaf_r {
     pub use super::lgamma_rf::*;
 }

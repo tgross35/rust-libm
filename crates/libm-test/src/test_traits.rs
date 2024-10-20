@@ -12,7 +12,7 @@ use std::fmt;
 
 /// Implement this on types that can generate a sequence of tuples for test input.
 pub trait GenerateInput<TupleArgs> {
-    fn get_cases(&self) -> impl ExactSizeIterator<Item = TupleArgs>;
+    fn get_cases(&self) -> impl Iterator<Item = TupleArgs>;
 }
 
 /// Trait for calling a function with a tuple as arguments.
