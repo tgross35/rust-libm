@@ -123,9 +123,6 @@ libm_macros::for_each_function! {
     attributes: [],
     skip: [
         fmod,fmodf,
-        ilogb,ilogbf,
-        nextafter,nextafterf,
-        pow,powf,
 
         frexp,
         frexpf,
@@ -144,8 +141,6 @@ libm_macros::for_each_function! {
         modff,
         remquo,
         remquof,
-        sincos,
-        sincosf,
     ],
     // fn_extra: match MACRO_FN_NAME {
     //     // (lgamma_r | lgammaf_r) => |x| {
@@ -165,13 +160,5 @@ libm_macros::for_each_function! {
     //         x
     //     },
     //     pow | powf => |x: MpFloat, y: &MpFloat| x.pow(y),
-    //     sincos | sincosf => |x: MpFloat| {
-    //         let cos = MpFloat::new(128);
-    //         x.sin_cos(cos)
-
-    //     },
-
-    //     sincos | sincosf => MpFloat::sin_cos,
-    //     _ => MpFloat::MACRO_FN_NAME_NORMALIZED,
     // }
 }

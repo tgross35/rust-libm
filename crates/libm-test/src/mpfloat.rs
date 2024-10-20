@@ -1,8 +1,7 @@
 use az::Az;
 // use rug::ops::Pow;
+use rug::ops::PowAssign;
 use rug::Assign;
-// use rug::ops::PowAssign
-use rug::Complete;
 pub use rug::Float as MpFloat;
 
 // TODO
@@ -166,40 +165,71 @@ macro_rules! impl_for_both {
     // Matcher for unary functions
     (
         $fty:ty, $suffix:literal
-        // fn_name: $fn_name:ident,
-        // CFn: $CFn:ty,
-        // CArgs: $CArgs:ty,
-        // CRet: $CRet:ty,
-        // RustFn: fn($_arg:ty,) -> $_ret:ty,
-        // RustArgs: $RustArgs:ty,
-        // RustRet: $RustRet:ty,
-        // fn_extra: $fn_name_normalized:expr,
     ) => {
-        // paste::paste! {
-        //     pub struct [< Fma $suffix >](MpFloat, MpFloat, MpFloat);
+        paste::paste! {
+            pub struct [< Nextafter $suffix >](MpFloat, MpFloat);
 
-        //     impl MpOp for [< Fma $suffix >] {
-        //         type Input = ($fty, $fty, $fty);
-        //         type Output = $fty;
+            impl MpOp for [< Nextafter $suffix >] {
+                type Input = ($fty, $fty);
+                type Output = $fty;
 
-        //         fn new() -> Self {
-        //             // TODO precision
-        //             Self(MpFloat::new(PREC_F64), MpFloat::new(PREC_F64), MpFloat::new(PREC_F64))
-        //         }
+                fn new() -> Self {
+                    // TODO precision
+                    Self(MpFloat::new(PREC_F64), MpFloat::new(PREC_F64))
+                }
 
-        //         fn assign_run(&mut self, input: Self::Input) -> Self::Output {
-        //             self.0.assign(input.0);
-        //             self.1.assign(input.1);
-        //             self.2.assign(input.2);
+                fn assign_run(&mut self, input: Self::Input) -> Self::Output {
+                    self.0.assign(input.0);
+                    self.1.assign(input.1);
+                    self.0.next_toward(&self.1);
 
-        //             let res = (&self.0 * &self.1) + &self.2;
-        //             res.complete_into(self.0);
+                    // TODO subnormalize
+                    (&self.0).az::<$fty>()
+                }
+            }
 
-        //             // TODO subnormalize
-        //             (&self.0).az::<Self::Output>()
-        //         }
-        //     }
-        // }
+            pub struct [< Pow $suffix >](MpFloat, MpFloat);
+
+            impl MpOp for [< Pow $suffix >] {
+                type Input = ($fty, $fty);
+                type Output = $fty;
+
+                fn new() -> Self {
+                    // TODO precision
+                    Self(MpFloat::new(PREC_F64), MpFloat::new(PREC_F64))
+                }
+
+                fn assign_run(&mut self, input: Self::Input) -> Self::Output {
+                    self.0.assign(input.0);
+                    self.1.assign(input.1);
+                    self.0.pow_assign(&self.1);
+
+                    // TODO subnormalize
+                    (&self.0).az::<$fty>()
+                }
+            }
+
+            pub struct [< Sincos $suffix >](MpFloat, MpFloat);
+
+            impl MpOp for [< Sincos $suffix >] {
+                type Input = ($fty,);
+                type Output = ($fty, $fty);
+
+                fn new() -> Self {
+                    // TODO precision
+                    Self(MpFloat::new(PREC_F64), MpFloat::new(PREC_F64))
+                }
+
+                fn assign_run(&mut self, input: Self::Input) -> Self::Output {
+                    self.0.assign(input.0);
+                    self.1.assign(0.0);
+                    self.0.sin_cos_mut(&mut self.1);
+
+                    // TODO subnormalize
+                    ((&self.0).az::<$fty>(), (&self.1).az::<$fty>())
+                }
+            }
+        }
     };
 }
 
