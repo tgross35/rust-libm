@@ -60,11 +60,11 @@ jobs:
         - target: i686-pc-windows-gnu
           os: windows-latest
           channel: nightly-i686-gnu
-          # cc: mingw-w64-i686-gcc
+          cc: mingw-w64-i686-gcc
         - target: x86_64-pc-windows-gnu
           os: windows-latest
           channel: nightly-x86_64-gnu
-          # cc: mingw-w64-x86_64-gcc
+          cc: mingw-w64-x86_64-gcc
     runs-on: ${{ matrix.os }}
     env:
       BUILD_ONLY: ${{ matrix.build_only }}
@@ -91,7 +91,7 @@ jobs:
     - uses: msys2/setup-msys2@v2
       if: contains(matrix.target, 'windows-gnu')
       with:
-        install: m4 make
+        install: m4 make ${{ matrix.cc }}
 
     - name: Download musl source
       run: ./ci/download-musl.sh
@@ -107,12 +107,6 @@ jobs:
       if: contains(matrix.target, 'windows-gnu')
       shell: msys2 {0}
       run: |
-        if [[ "${{ matrix.target }}" = "i686"* ]]; then
-          pacman -S mingw-w64-i686-gcc
-        else
-          pacman -S mingw-w64-x86_64-gcc
-        fi
-
         # Need to update path since it is set for the default bash, not msys
         export PATH="$PATH:/c/Users/runneradmin/.cargo/bin"
         ./ci/run.sh ${{ matrix.target }}
