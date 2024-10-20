@@ -93,7 +93,7 @@ macro_rules! musl_rand_tests {
             #[test]
             $(#[$meta])*
             fn [< multiprec_random_ $fn_name >]() {
-                type MpOpTy = mpfloat::[< $fn_name:camel >];
+                type MpOpTy = mpfloat::$fn_name::Operation;
 
                 let fname = stringify!($fn_name);
                 let inputs = if fname == "jn" || fname == "jnf" {

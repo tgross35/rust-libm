@@ -27,22 +27,25 @@ macro_rules! impl_mp_op {
         fn_extra: $fn_name_normalized:expr,
     ) => {
         paste::paste! {
-            pub struct [< $fn_name:camel >](MpFloat);
+            pub mod $fn_name {
+                use super::*;
+                pub struct Operation(MpFloat);
 
-            impl MpOp for [< $fn_name:camel >] {
-                type Input = $RustArgs;
-                type Output = $RustRet;
+                impl MpOp for Operation {
+                    type Input = $RustArgs;
+                    type Output = $RustRet;
 
-                fn new() -> Self {
-                    // TODO precision
-                    Self(MpFloat::new(PREC_F64))
-                }
+                    fn new() -> Self {
+                        // TODO precision
+                        Self(MpFloat::new(PREC_F64))
+                    }
 
-                fn assign_run(&mut self, input: Self::Input) -> Self::Output {
-                    self.0.assign(input.0);
-                    self.0.[< $fn_name_normalized _mut >]();
-                    // TODO subnormalize
-                    (&self.0).az::<Self::Output>()
+                    fn assign_run(&mut self, input: Self::Input) -> Self::Output {
+                        self.0.assign(input.0);
+                        self.0.[< $fn_name_normalized _mut >]();
+                        // TODO subnormalize
+                        (&self.0).az::<Self::Output>()
+                    }
                 }
             }
         }
@@ -59,23 +62,26 @@ macro_rules! impl_mp_op {
         fn_extra: $fn_name_normalized:expr,
     ) => {
         paste::paste! {
-            pub struct [< $fn_name:camel >](MpFloat, MpFloat);
+            pub mod $fn_name {
+                use super::*;
+                pub struct Operation(MpFloat, MpFloat);
 
-            impl MpOp for [< $fn_name:camel >] {
-                type Input = $RustArgs;
-                type Output = $RustRet;
+                impl MpOp for Operation {
+                    type Input = $RustArgs;
+                    type Output = $RustRet;
 
-                fn new() -> Self {
-                    // TODO precision
-                    Self(MpFloat::new(PREC_F64), MpFloat::new(PREC_F64))
-                }
+                    fn new() -> Self {
+                        // TODO precision
+                        Self(MpFloat::new(PREC_F64), MpFloat::new(PREC_F64))
+                    }
 
-                fn assign_run(&mut self, input: Self::Input) -> Self::Output {
-                    self.0.assign(input.0);
-                    self.1.assign(input.1);
-                    self.0.[< $fn_name_normalized _mut >](&self.1);
-                    // TODO subnormalize
-                    (&self.0).az::<Self::Output>()
+                    fn assign_run(&mut self, input: Self::Input) -> Self::Output {
+                        self.0.assign(input.0);
+                        self.1.assign(input.1);
+                        self.0.[< $fn_name_normalized _mut >](&self.1);
+                        // TODO subnormalize
+                        (&self.0).az::<Self::Output>()
+                    }
                 }
             }
         }
@@ -92,24 +98,27 @@ macro_rules! impl_mp_op {
         fn_extra: $fn_name_normalized:expr,
     ) => {
         paste::paste! {
-            pub struct [< $fn_name:camel >](MpFloat, MpFloat, MpFloat);
+            pub mod $fn_name {
+                use super::*;
+                pub struct Operation(MpFloat, MpFloat, MpFloat);
 
-            impl MpOp for [< $fn_name:camel >] {
-                type Input = $RustArgs;
-                type Output = $RustRet;
+                impl MpOp for Operation {
+                    type Input = $RustArgs;
+                    type Output = $RustRet;
 
-                fn new() -> Self {
-                    // TODO precision
-                    Self(MpFloat::new(PREC_F64), MpFloat::new(PREC_F64), MpFloat::new(PREC_F64))
-                }
+                    fn new() -> Self {
+                        // TODO precision
+                        Self(MpFloat::new(PREC_F64), MpFloat::new(PREC_F64), MpFloat::new(PREC_F64))
+                    }
 
-                fn assign_run(&mut self, input: Self::Input) -> Self::Output {
-                    self.0.assign(input.0);
-                    self.1.assign(input.1);
-                    self.2.assign(input.2);
-                    self.0.[< $fn_name_normalized _mut >](&self.1, &self.2);
-                    // TODO subnormalize
-                    (&self.0).az::<Self::Output>()
+                    fn assign_run(&mut self, input: Self::Input) -> Self::Output {
+                        self.0.assign(input.0);
+                        self.1.assign(input.1);
+                        self.2.assign(input.2);
+                        self.0.[< $fn_name_normalized _mut >](&self.1, &self.2);
+                        // TODO subnormalize
+                        (&self.0).az::<Self::Output>()
+                    }
                 }
             }
         }
@@ -160,73 +169,82 @@ libm_macros::for_each_function! {
     }
 }
 
-/// Some functions are difficult to do in a generic way. Implement them here.
+/// Some functions are difficult to do in a generic way. Operationement them here.
 macro_rules! impl_for_both {
     // Matcher for unary functions
     (
         $fty:ty, $suffix:literal
     ) => {
         paste::paste! {
-            pub struct [< Nextafter $suffix >](MpFloat, MpFloat);
+            pub mod [<nextafter $suffix>] {
+                use super::*;
+                pub struct Operation(MpFloat, MpFloat);
 
-            impl MpOp for [< Nextafter $suffix >] {
-                type Input = ($fty, $fty);
-                type Output = $fty;
+                impl MpOp for Operation {
+                    type Input = ($fty, $fty);
+                    type Output = $fty;
 
-                fn new() -> Self {
-                    // TODO precision
-                    Self(MpFloat::new(PREC_F64), MpFloat::new(PREC_F64))
-                }
+                    fn new() -> Self {
+                        // TODO precision
+                        Self(MpFloat::new(PREC_F64), MpFloat::new(PREC_F64))
+                    }
 
-                fn assign_run(&mut self, input: Self::Input) -> Self::Output {
-                    self.0.assign(input.0);
-                    self.1.assign(input.1);
-                    self.0.next_toward(&self.1);
+                    fn assign_run(&mut self, input: Self::Input) -> Self::Output {
+                        self.0.assign(input.0);
+                        self.1.assign(input.1);
+                        self.0.next_toward(&self.1);
 
-                    // TODO subnormalize
-                    (&self.0).az::<$fty>()
-                }
-            }
-
-            pub struct [< Pow $suffix >](MpFloat, MpFloat);
-
-            impl MpOp for [< Pow $suffix >] {
-                type Input = ($fty, $fty);
-                type Output = $fty;
-
-                fn new() -> Self {
-                    // TODO precision
-                    Self(MpFloat::new(PREC_F64), MpFloat::new(PREC_F64))
-                }
-
-                fn assign_run(&mut self, input: Self::Input) -> Self::Output {
-                    self.0.assign(input.0);
-                    self.1.assign(input.1);
-                    self.0.pow_assign(&self.1);
-
-                    // TODO subnormalize
-                    (&self.0).az::<$fty>()
+                        // TODO subnormalize
+                        (&self.0).az::<$fty>()
+                    }
                 }
             }
 
-            pub struct [< Sincos $suffix >](MpFloat, MpFloat);
+            pub mod [<pow $suffix>] {
+                use super::*;
+                pub struct Operation(MpFloat, MpFloat);
 
-            impl MpOp for [< Sincos $suffix >] {
-                type Input = ($fty,);
-                type Output = ($fty, $fty);
+                impl MpOp for Operation {
+                    type Input = ($fty, $fty);
+                    type Output = $fty;
 
-                fn new() -> Self {
-                    // TODO precision
-                    Self(MpFloat::new(PREC_F64), MpFloat::new(PREC_F64))
+                    fn new() -> Self {
+                        // TODO precision
+                        Self(MpFloat::new(PREC_F64), MpFloat::new(PREC_F64))
+                    }
+
+                    fn assign_run(&mut self, input: Self::Input) -> Self::Output {
+                        self.0.assign(input.0);
+                        self.1.assign(input.1);
+                        self.0.pow_assign(&self.1);
+
+                        // TODO subnormalize
+                        (&self.0).az::<$fty>()
+                    }
                 }
+            }
 
-                fn assign_run(&mut self, input: Self::Input) -> Self::Output {
-                    self.0.assign(input.0);
-                    self.1.assign(0.0);
-                    self.0.sin_cos_mut(&mut self.1);
+            pub mod [<sincos $suffix>] {
+                use super::*;
+                pub struct Operation(MpFloat, MpFloat);
 
-                    // TODO subnormalize
-                    ((&self.0).az::<$fty>(), (&self.1).az::<$fty>())
+                impl MpOp for Operation {
+                    type Input = ($fty,);
+                    type Output = ($fty, $fty);
+
+                    fn new() -> Self {
+                        // TODO precision
+                        Self(MpFloat::new(PREC_F64), MpFloat::new(PREC_F64))
+                    }
+
+                    fn assign_run(&mut self, input: Self::Input) -> Self::Output {
+                        self.0.assign(input.0);
+                        self.1.assign(0.0);
+                        self.0.sin_cos_mut(&mut self.1);
+
+                        // TODO subnormalize
+                        ((&self.0).az::<$fty>(), (&self.1).az::<$fty>())
+                    }
                 }
             }
         }
