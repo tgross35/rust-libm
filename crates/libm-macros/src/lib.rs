@@ -305,7 +305,6 @@ struct FunctionInfo {
     c_sig: Signature,
     /// Function signature for Rust implementations
     rust_sig: Signature,
-    rug_sig: Signature,
 }
 
 /// A flat representation of `ALL_FUNCTIONS`.
@@ -314,16 +313,10 @@ static ALL_FUNCTIONS_FLAT: LazyLock<Vec<FunctionInfo>> = LazyLock::new(|| {
 
     for (rust_sig, c_sig, names) in ALL_FUNCTIONS {
         for name in *names {
-            let rug_sig = Signature {
-                args: make_rug_tuple(&rust_sig.args, false),
-                returns: make_rug_tuple(&rust_sig.returns, true),
-            };
-
             let api = FunctionInfo {
                 name,
                 rust_sig: rust_sig.clone(),
                 c_sig: c_sig.clone().unwrap_or_else(|| rust_sig.clone()),
-                rug_sig,
             };
             ret.push(api);
         }
@@ -331,27 +324,6 @@ static ALL_FUNCTIONS_FLAT: LazyLock<Vec<FunctionInfo>> = LazyLock::new(|| {
 
     ret
 });
-
-fn make_rug_tuple(asdf: &[Ty], is_retval: bool) -> Cow<'static, [Ty]> {
-    let mut x = asdf.to_owned();
-    for (idx, v) in x.iter_mut().enumerate() {
-        match v {
-            Ty::F16 | Ty::F32 | Ty::F64 | Ty::F128 => {
-                *v = if is_retval || idx == 0 {
-                    Ty::MpFloat
-                } else {
-                    Ty::RefMpFloat
-                }
-            }
-            Ty::I32 | Ty::CInt => (),
-            Ty::MutF16 | Ty::MutF32 | Ty::MutF64 | Ty::MutF128 | Ty::MutI32 | Ty::MutCInt => {
-                unreachable!("no mutable values in Rust signatures")
-            }
-            Ty::MpFloat | Ty::RefMpFloat => unreachable!("no mpfloat in Rust signatures"),
-        }
-    }
-    Cow::Owned(x)
-}
 
 /// Do something for each function present in this crate.
 ///
@@ -567,9 +539,6 @@ fn expand(input: StructuredInput) -> syn::Result<pm2::TokenStream> {
         let c_ret = &func.c_sig.returns;
         let rust_args = &func.rust_sig.args;
         let rust_ret = &func.rust_sig.returns;
-        // FIXME
-        let rug_args = &func.rug_sig.args;
-        let rug_ret = &func.rug_sig.returns;
 
         let new = quote! {
             #callback! {

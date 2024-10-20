@@ -129,31 +129,13 @@ macro_rules! impl_mp_op {
 libm_macros::for_each_function! {
     callback: impl_mp_op,
     skip: [
-        fmod,fmodf,
-        nextafter,nextafterf,
-        pow,powf,
-
-        frexp,
-        frexpf,
-        ldexp,
-        ldexpf,
-        scalbn,
-        scalbnf,
-
-        jn,jnf,
-
-        ilogb,
-        ilogbf,
-        lgamma_r,
-        lgammaf_r,
-        modf,
-        modff,
-        remquo,
-        remquof,
-        sincos,
-        sincosf,
+        // Most of these need a manual implementation
+        fmod, fmodf, frexp, frexpf, ilogb, ilogbf, jn, jnf, ldexp, ldexpf,
+        lgamma_r, lgammaf_r, modf, modff, nextafter, nextafterf, pow,powf,
+        remquo, remquof, scalbn, scalbnf, sincos, sincosf,
     ],
     fn_extra: match MACRO_FN_NAME {
+        // Remap function names that are different between mpfr and libm
         expm1 | expm1f => exp_m1,
         fabs | fabsf => abs,
         fdim | fdimf => positive_diff,
@@ -169,7 +151,7 @@ libm_macros::for_each_function! {
     }
 }
 
-/// Some functions are difficult to do in a generic way. Operationement them here.
+/// Some functions are difficult to do in a generic way. Implement them here.
 macro_rules! impl_for_both {
     // Matcher for unary functions
     (

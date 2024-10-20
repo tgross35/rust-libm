@@ -10,10 +10,6 @@ use az::Az;
 use libm_test::allowed_ulp;
 use libm_test::gen::CachedInput;
 use libm_test::mpfloat::{self, MpFloat, MpOp};
-// use libm_test::rug_traits::CreateThing;
-// use libm_test::rug_traits::MpFloatThing;
-// use libm_test::rug_traits::ToSomething;
-// use libm_test::rug_traits::TupleAssign;
 use libm_test::TRUE_DEFAULT_ULP;
 use libm_test::{CheckOutput, GenerateInput, TupleCall};
 use rand::{Rng, SeedableRng};
@@ -122,25 +118,18 @@ libm_macros::for_each_function! {
     callback: musl_rand_tests,
     attributes: [],
     skip: [
+        // No easy equivalent in MPFR
         frexp,
         frexpf,
+        ilogb,
+        ilogbf,
         ldexp,
         ldexpf,
         modf,
         modff,
-        scalbn,
-        scalbnf,
-
-        ilogb,
-        ilogbf,
         remquo,
         remquof,
+        scalbn,
+        scalbnf,
     ],
-    // fn_extra: match MACRO_FN_NAME {
-    //     // (lgamma_r | lgammaf_r) => |x| {
-    //     //     let f = x.ln_gamma();
-    //     //     let i = f.cmp(0) as i32;
-    //     //     (f, i)
-    //     // },
-    // }
 }
