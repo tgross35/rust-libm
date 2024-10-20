@@ -5,16 +5,33 @@ use rug::ops::PowAssign;
 use rug::Assign;
 pub use rug::Float as MpFloat;
 
-// TODO
-const PREC_F64: u32 = 1000;
+use crate::Float;
 
+/// Create a multiprecision float with the correct number of bits to keep precision.
+fn new_mpfloat<F: Float>() -> MpFloat {
+    MpFloat::new(F::SIGNIFICAND_BITS + 1)
+}
+
+fn prep_retval<F: Float>(mp: &mut MpFloat) -> F
+where
+    for<'b> &'b MpFloat: az::Cast<F>,
+{
+    mp.subnormalize_ieee();
+    let mp = &*mp;
+    mp.az::<F>()
+}
+
+///
 pub trait MpOp {
     type Input;
     type Output;
+    /// Create
     fn new() -> Self;
+    ///
     fn assign_run(&mut self, input: Self::Input) -> Self::Output;
 }
 
+/// Implement
 macro_rules! impl_mp_op {
     // Matcher for unary functions
     (
@@ -22,7 +39,7 @@ macro_rules! impl_mp_op {
         CFn: $CFn:ty,
         CArgs: $CArgs:ty,
         CRet: $CRet:ty,
-        RustFn: fn($_arg:ty,) -> $_ret:ty,
+        RustFn: fn($fty:ty,) -> $_ret:ty,
         RustArgs: $RustArgs:ty,
         RustRet: $RustRet:ty,
         fn_extra: $fn_name_normalized:expr,
@@ -37,15 +54,13 @@ macro_rules! impl_mp_op {
                     type Output = $RustRet;
 
                     fn new() -> Self {
-                        // TODO precision
-                        Self(MpFloat::new(PREC_F64))
+                        Self(new_mpfloat::<$fty>())
                     }
 
                     fn assign_run(&mut self, input: Self::Input) -> Self::Output {
                         self.0.assign(input.0);
                         self.0.[< $fn_name_normalized _mut >]();
-                        // TODO subnormalize
-                        (&self.0).az::<Self::Output>()
+                        prep_retval::<Self::Output>(&mut self.0)
                     }
                 }
             }
@@ -57,7 +72,7 @@ macro_rules! impl_mp_op {
         CFn: $CFn:ty,
         CArgs: $CArgs:ty,
         CRet: $CRet:ty,
-        RustFn: fn($_arg1:ty, $_arg2:ty,) -> $_ret:ty,
+        RustFn: fn($fty:ty, $_fty2:ty,) -> $_ret:ty,
         RustArgs: $RustArgs:ty,
         RustRet: $RustRet:ty,
         fn_extra: $fn_name_normalized:expr,
@@ -72,16 +87,14 @@ macro_rules! impl_mp_op {
                     type Output = $RustRet;
 
                     fn new() -> Self {
-                        // TODO precision
-                        Self(MpFloat::new(PREC_F64), MpFloat::new(PREC_F64))
+                        Self(new_mpfloat::<$fty>(), new_mpfloat::<$fty>())
                     }
 
                     fn assign_run(&mut self, input: Self::Input) -> Self::Output {
                         self.0.assign(input.0);
                         self.1.assign(input.1);
                         self.0.[< $fn_name_normalized _mut >](&self.1);
-                        // TODO subnormalize
-                        (&self.0).az::<Self::Output>()
+                        prep_retval::<Self::Output>(&mut self.0)
                     }
                 }
             }
@@ -93,7 +106,7 @@ macro_rules! impl_mp_op {
         CFn: $CFn:ty,
         CArgs: $CArgs:ty,
         CRet: $CRet:ty,
-        RustFn: fn($_arg1:ty, $_arg2:ty, $_arg3:ty,) -> $_ret:ty,
+        RustFn: fn($fty:ty, $_fty2:ty, $_fty3:ty,) -> $_ret:ty,
         RustArgs: $RustArgs:ty,
         RustRet: $RustRet:ty,
         fn_extra: $fn_name_normalized:expr,
@@ -108,8 +121,7 @@ macro_rules! impl_mp_op {
                     type Output = $RustRet;
 
                     fn new() -> Self {
-                        // TODO precision
-                        Self(MpFloat::new(PREC_F64), MpFloat::new(PREC_F64), MpFloat::new(PREC_F64))
+                        Self(new_mpfloat::<$fty>(), new_mpfloat::<$fty>(), new_mpfloat::<$fty>())
                     }
 
                     fn assign_run(&mut self, input: Self::Input) -> Self::Output {
@@ -117,8 +129,7 @@ macro_rules! impl_mp_op {
                         self.1.assign(input.1);
                         self.2.assign(input.2);
                         self.0.[< $fn_name_normalized _mut >](&self.1, &self.2);
-                        // TODO subnormalize
-                        (&self.0).az::<Self::Output>()
+                        prep_retval::<Self::Output>(&mut self.0)
                     }
                 }
             }
@@ -167,17 +178,14 @@ macro_rules! impl_for_both {
                     type Output = $fty;
 
                     fn new() -> Self {
-                        // TODO precision
-                        Self(MpFloat::new(PREC_F64), MpFloat::new(PREC_F64))
+                        Self(new_mpfloat::<$fty>(), new_mpfloat::<$fty>())
                     }
 
                     fn assign_run(&mut self, input: Self::Input) -> Self::Output {
                         self.0.assign(input.0);
                         self.1.assign(input.1);
                         self.0.next_toward(&self.1);
-
-                        // TODO subnormalize
-                        (&self.0).az::<$fty>()
+                        prep_retval::<Self::Output>(&mut self.0)
                     }
                 }
             }
@@ -191,17 +199,14 @@ macro_rules! impl_for_both {
                     type Output = $fty;
 
                     fn new() -> Self {
-                        // TODO precision
-                        Self(MpFloat::new(PREC_F64), MpFloat::new(PREC_F64))
+                        Self(new_mpfloat::<$fty>(), new_mpfloat::<$fty>())
                     }
 
                     fn assign_run(&mut self, input: Self::Input) -> Self::Output {
                         self.0.assign(input.0);
                         self.1.assign(input.1);
                         self.0.pow_assign(&self.1);
-
-                        // TODO subnormalize
-                        (&self.0).az::<$fty>()
+                        prep_retval::<Self::Output>(&mut self.0)
                     }
                 }
             }
@@ -215,17 +220,14 @@ macro_rules! impl_for_both {
                     type Output = $fty;
 
                     fn new() -> Self {
-                        // TODO precision
-                        Self(MpFloat::new(PREC_F64), MpFloat::new(PREC_F64))
+                        Self(new_mpfloat::<$fty>(), new_mpfloat::<$fty>())
                     }
 
                     fn assign_run(&mut self, input: Self::Input) -> Self::Output {
                         self.0.assign(input.0);
                         self.1.assign(input.1);
                         self.0.rem_assign(&self.1);
-
-                        // TODO subnormalize
-                        (&self.0).az::<$fty>()
+                        prep_retval::<Self::Output>(&mut self.0)
                     }
                 }
             }
@@ -239,16 +241,14 @@ macro_rules! impl_for_both {
                     type Output = ($fty, i32);
 
                     fn new() -> Self {
-                        // TODO precision
-                        Self(MpFloat::new(PREC_F64))
+                        Self(new_mpfloat::<$fty>())
                     }
 
                     fn assign_run(&mut self, input: Self::Input) -> Self::Output {
                         self.0.assign(input.0);
                         let ordering = self.0.ln_abs_gamma_mut();
-
-                        // TODO subnormalize
-                        ((&self.0).az::<$fty>(), ordering as i32)
+                        let ret = prep_retval::<$fty>(&mut self.0);
+                        (ret, ordering as i32)
                     }
                 }
             }
@@ -262,17 +262,14 @@ macro_rules! impl_for_both {
                     type Output = $fty;
 
                     fn new() -> Self {
-                        // TODO precision
-                        Self(0, MpFloat::new(PREC_F64))
+                        Self(0, new_mpfloat::<$fty>())
                     }
 
                     fn assign_run(&mut self, input: Self::Input) -> Self::Output {
                         self.0 = input.0;
                         self.1.assign(input.1);
                         self.1.jn_mut(self.0);
-
-                        // TODO subnormalize
-                        (&self.1).az::<$fty>()
+                        prep_retval::<$fty>(&mut self.1)
                     }
                 }
             }
@@ -286,17 +283,14 @@ macro_rules! impl_for_both {
                     type Output = ($fty, $fty);
 
                     fn new() -> Self {
-                        // TODO precision
-                        Self(MpFloat::new(PREC_F64), MpFloat::new(PREC_F64))
+                        Self(new_mpfloat::<$fty>(), new_mpfloat::<$fty>())
                     }
 
                     fn assign_run(&mut self, input: Self::Input) -> Self::Output {
                         self.0.assign(input.0);
                         self.1.assign(0.0);
                         self.0.sin_cos_mut(&mut self.1);
-
-                        // TODO subnormalize
-                        ((&self.0).az::<$fty>(), (&self.1).az::<$fty>())
+                        (prep_retval::<$fty>(&mut self.0), prep_retval::<$fty>(&mut self.1))
                     }
                 }
             }

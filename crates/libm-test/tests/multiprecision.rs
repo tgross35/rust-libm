@@ -118,7 +118,7 @@ libm_macros::for_each_function! {
     callback: musl_rand_tests,
     attributes: [],
     skip: [
-        // No easy equivalent in MPFR
+        // FIXME: MPFR tests needed
         frexp,
         frexpf,
         ilogb,

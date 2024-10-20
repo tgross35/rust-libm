@@ -5,7 +5,15 @@ pub trait Float: Copy + fmt::Display + fmt::Debug + PartialEq<Self> {
     type Int: Int<OtherSign = Self::SignedInt, Unsigned = Self::Int>;
     type SignedInt: Int + Int<OtherSign = Self::Int, Unsigned = Self::Int>;
 
+    /// The bitwidth of the float type
     const BITS: u32;
+
+    /// The bitwidth of the significand
+    const SIGNIFICAND_BITS: u32;
+
+    /// The bitwidth of the exponent
+    const EXPONENT_BITS: u32 = Self::BITS - Self::SIGNIFICAND_BITS - 1;
+
     fn is_nan(self) -> bool;
     fn to_bits(self) -> Self::Int;
     fn from_bits(bits: Self::Int) -> Self;
@@ -13,12 +21,15 @@ pub trait Float: Copy + fmt::Display + fmt::Debug + PartialEq<Self> {
 }
 
 macro_rules! impl_float {
-    ($($fty:ty, $ui:ty, $si:ty;)+) => {
+    ($($fty:ty, $ui:ty, $si:ty, $significand_bits:expr;)+) => {
         $(
             impl Float for $fty {
                 type Int = $ui;
                 type SignedInt = $si;
+
                 const BITS: u32 = <$ui>::BITS;
+                const SIGNIFICAND_BITS: u32 = $significand_bits;
+
                 fn is_nan(self) -> bool {
                     self.is_nan()
                 }
@@ -43,8 +54,8 @@ macro_rules! impl_float {
 }
 
 impl_float!(
-    f32, u32, i32;
-    f64, u64, i64;
+    f32, u32, i32, 23;
+    f64, u64, i64, 52;
 );
 
 /// Common types and methods for integers.
