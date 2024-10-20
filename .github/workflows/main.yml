@@ -105,10 +105,15 @@ jobs:
       if: contains(matrix.target, 'windows-gnu')
       shell: msys2 {0}
       run: |
-        echo "$PATH"
+        pacman -S 
+        if [[ "${{ matrix.target }}" = "i686"* ]]; then
+          pacman -S mingw-w64-i686-gcc
+        else
+          pacman -S mingw-w64-x86_64-gcc
+        fi
+
+        # Need to update path since it is set for the default bash, not msys
         export PATH="$PATH:/c/Users/runneradmin/.cargo/bin"
-        echo "$PATH"
-        ls /c/Users/runneradmin/.cargo/bin
         ./ci/run.sh ${{ matrix.target }}
 
     # Otherwise we use our docker containers to run builds
