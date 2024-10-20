@@ -20,8 +20,7 @@ extra_flags=""
 case "$target" in
     # MSVC cannot link MPFR
     *windows-msvc*) ;;
-    # Targets that aren't cross compiled work fine (requiers native aarch64 runners)
-    aarch64*) extra_flags="$extra_flags --features libm-test/multiprecision-tests" ;;
+    # Targets that aren't cross compiled work fine
     x86_64*) extra_flags="$extra_flags --features libm-test/multiprecision-tests" ;;
     # i686 works fine, i586 does not
     i686*) extra_flags="$extra_flags --features libm-test/multiprecision-tests" ;;
