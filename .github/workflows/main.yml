@@ -73,9 +73,6 @@ jobs:
         channel="nightly"
         # Account for channels that have required components (MinGW)
         [ -n "${{ matrix.channel }}" ] && channel="${{ matrix.channel }}"
-        # Install dependencies for building system libraries on windows-gnu
-        [[ "${{ matrix.target }}" == *"windows-gnu"* ]] && pacman -S m4 make
-
         rustup update "$channel" --no-self-update
         rustup default "$channel"
         rustup target add ${{ matrix.target }}
@@ -83,6 +80,10 @@ jobs:
     - uses: Swatinem/rust-cache@v2
       with:
         key: ${{ matrix.target }}
+
+    - uses: msys2/setup-msys2@v2
+      if: contains(matrix.target, "windws-gnu")
+      install: [m4, make]
 
     - name: Download musl source
       run: ./ci/download-musl.sh
