@@ -80,6 +80,7 @@ jobs:
         rustup target add ${{ matrix.target }}
         rustup component add llvm-tools-preview
         printenv
+        which cargo
     - uses: Swatinem/rust-cache@v2
       with:
         key: ${{ matrix.target }}
