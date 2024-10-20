@@ -10,10 +10,10 @@ use az::Az;
 use libm_test::allowed_ulp;
 use libm_test::gen::CachedInput;
 use libm_test::mpfloat::{self, MpFloat, MpOp};
-use libm_test::rug_traits::CreateThing;
-use libm_test::rug_traits::MpFloatThing;
-use libm_test::rug_traits::ToSomething;
-use libm_test::rug_traits::TupleAssign;
+// use libm_test::rug_traits::CreateThing;
+// use libm_test::rug_traits::MpFloatThing;
+// use libm_test::rug_traits::ToSomething;
+// use libm_test::rug_traits::TupleAssign;
 use libm_test::TRUE_DEFAULT_ULP;
 use libm_test::{CheckOutput, GenerateInput, TupleCall};
 use rand::{Rng, SeedableRng};
@@ -87,9 +87,6 @@ macro_rules! musl_rand_tests {
         RustFn: $RustFn:ty,
         RustArgs: $RustArgs:ty,
         RustRet: $RustRet:ty,
-        RugFn: $RugFn:ty,
-        RugArgs: $RugArgs:ty,
-        RugRet: $RugRet:ty,
         attrs: [$($meta:meta)*]
     ) => {
         paste::paste! {
@@ -125,18 +122,10 @@ libm_macros::for_each_function! {
     callback: musl_rand_tests,
     attributes: [],
     skip: [
-        atan2,atan2f,
-        copysign,copysignf,
-        fdim,fdimf,
-        fma,fmaf,
-        fmax,fmaxf,
-        fmin,fminf,
         fmod,fmodf,
-        hypot,hypotf,
         ilogb,ilogbf,
         nextafter,nextafterf,
         pow,powf,
-        remainder,remainderf,
 
         frexp,
         frexpf,
@@ -164,13 +153,10 @@ libm_macros::for_each_function! {
     //     //     let i = f.cmp(0) as i32;
     //     //     (f, i)
     //     // },
-    //     fdim | fdimf => MpFloat::positive_diff,
     //     fma | fmaf => |x: MpFloat, y: &MpFloat, z: &MpFloat| {
     //         let res = (&x * y) + z;
     //         res.complete(128)
     //     },
-    //     fmax | fmaxf => MpFloat::max,
-    //     fmin | fminf => MpFloat::min,
     //     fmod | fmodf => |x: MpFloat, y: &MpFloat| {
     //         x % y
     //     },

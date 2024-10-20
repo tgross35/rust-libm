@@ -90,9 +90,6 @@ macro_rules! musl_rand_tests {
         RustFn: $RustFn:ty,
         RustArgs: $RustArgs:ty,
         RustRet: $RustRet:ty,
-        RugFn: $RugFn:ty,
-        RugArgs: $RugArgs:ty,
-        RugRet: $RugRet:ty,
         attrs: [$($meta:meta)*]
     ) => { paste::paste! {
         #[test]

@@ -385,10 +385,6 @@ fn make_rug_tuple(asdf: &[Ty], is_retval: bool) -> Cow<'static, [Ty]> {
 ///         RustArgs: $RustArgs:ty,
 ///         // The Rust version's return type (e.g. `(f32, f32)`)
 ///         RustRet: $RustRet:ty,
-///         // TODO
-///         RugFn: $RugFn:ty,
-///         RugArgs: $RugArgs:ty,
-///         RugRet: $RugRet:ty,
 ///         // Attributes for the current function, if any
 ///         attrs: [$($meta:meta)*]
 ///         // Extra tokens passed directly (if any)
@@ -448,6 +444,7 @@ fn validate(input: &StructuredInput) -> syn::Result<()> {
         .iter()
         .flat_map(|map_list| map_list.iter())
         .flat_map(|attr_map| attr_map.names.iter());
+    let only_mentions = input.only.iter().flat_map(|only_list| only_list.iter());
     let fn_extra_mentions = input
         .fn_extra
         .iter()
@@ -456,6 +453,7 @@ fn validate(input: &StructuredInput) -> syn::Result<()> {
     let mentioned_fns = input
         .skip
         .iter()
+        .chain(only_mentions)
         .chain(attr_mentions)
         .chain(fn_extra_mentions);
 
@@ -468,6 +466,14 @@ fn validate(input: &StructuredInput) -> syn::Result<()> {
             );
             return Err(e);
         }
+    }
+
+    if input.skip.is_empty() && input.only.is_some() {
+        let e = syn::Error::new(
+            input.only_span.unwrap(),
+            format!("only one of `skip` or `only` may be specified"),
+        );
+        return Err(e);
     }
 
     if let Some(map) = &input.fn_extra {
@@ -506,7 +512,12 @@ fn expand(input: StructuredInput) -> syn::Result<pm2::TokenStream> {
         let fn_name = Ident::new(func.name, Span::call_site());
 
         // No output on functions that should be skipped
-        if input.skip.contains(&fn_name) {
+        if input
+            .only
+            .as_ref()
+            .is_some_and(|only| !only.contains(&fn_name))
+            || input.skip.contains(&fn_name)
+        {
             continue;
         }
 
@@ -556,6 +567,7 @@ fn expand(input: StructuredInput) -> syn::Result<pm2::TokenStream> {
         let c_ret = &func.c_sig.returns;
         let rust_args = &func.rust_sig.args;
         let rust_ret = &func.rust_sig.returns;
+        // FIXME
         let rug_args = &func.rug_sig.args;
         let rug_ret = &func.rug_sig.returns;
 
@@ -568,9 +580,6 @@ fn expand(input: StructuredInput) -> syn::Result<pm2::TokenStream> {
                 RustFn: fn( #(#rust_args),* ,) -> ( #(#rust_ret),* ),
                 RustArgs: ( #(#rust_args),* ,),
                 RustRet: ( #(#rust_ret),* ),
-                RugFn: fn( #(#rug_args),* ,) -> ( #(#rug_ret),* ),
-                RugArgs: ( #(#rug_args),* ,),
-                RugRet: ( #(#rug_ret),* ),
                 #meta_field
                 #extra_field
                 #fn_extra_field

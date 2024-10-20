@@ -48,10 +48,13 @@ impl Parse for Mapping {
 pub struct StructuredInput {
     pub callback: Ident,
     pub skip: Vec<Ident>,
+    pub only: Option<Vec<Ident>>,
     pub attributes: Option<Vec<AttributeMap>>,
     pub extra: Option<Expr>,
     pub fn_extra: Option<BTreeMap<Ident, Expr>>,
     // For diagnostics
+    pub only_span: Option<Span>,
+    pub skip_span: Option<Span>,
     pub fn_extra_span: Option<Span>,
 }
 
@@ -60,6 +63,7 @@ impl StructuredInput {
         let mut map: Vec<_> = input.fields.into_iter().collect();
         let cb_expr = expect_field(&mut map, "callback")?;
         let skip_expr = expect_field(&mut map, "skip").ok();
+        let only_expr = expect_field(&mut map, "only").ok();
         let attr_expr = expect_field(&mut map, "attributes").ok();
         let extra = expect_field(&mut map, "extra").ok();
         let fn_extra = expect_field(&mut map, "fn_extra").ok();
@@ -71,9 +75,16 @@ impl StructuredInput {
             ))?;
         }
 
+        let skip_span = skip_expr.as_ref().map(|expr| expr.span());
         let skip = match skip_expr {
             Some(expr) => Parser::parse2(parse_ident_array, expr.into_token_stream())?,
             None => Vec::new(),
+        };
+
+        let only_span = only_expr.as_ref().map(|expr| expr.span());
+        let only = match only_expr {
+            Some(expr) => Some(Parser::parse2(parse_ident_array, expr.into_token_stream())?),
+            None => None,
         };
 
         let attributes = match attr_expr {
@@ -98,6 +109,9 @@ impl StructuredInput {
         Ok(Self {
             callback: expect_ident(cb_expr)?,
             skip,
+            skip_span,
+            only,
+            only_span,
             attributes,
             extra,
             fn_extra,

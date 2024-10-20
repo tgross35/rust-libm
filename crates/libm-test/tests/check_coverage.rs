@@ -28,9 +28,6 @@ macro_rules! callback {
         RustFn: $_RustFn:ty,
         RustArgs: $_RustArgs:ty,
         RustRet: $_RustRet:ty,
-        RugFn: $RugFn:ty,
-        RugArgs: $RugArgs:ty,
-        RugRet: $RugRet:ty,
         extra: [$push_to:ident],
     ) => {
         $push_to.push(stringify!($name));
