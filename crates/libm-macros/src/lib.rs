@@ -1,7 +1,7 @@
 mod parse;
 use parse::{Invocation, StructuredInput};
 
-use std::{borrow::Cow, sync::LazyLock};
+use std::sync::LazyLock;
 
 use proc_macro as pm;
 use proc_macro2::{self as pm2, Span};
@@ -12,8 +12,8 @@ const ALL_FUNCTIONS: &[(Signature, Option<Signature>, &[&str])] = &[
     (
         // `fn(f32) -> f32`
         Signature {
-            args: Cow::Borrowed(&[Ty::F32]),
-            returns: Cow::Borrowed(&[Ty::F32]),
+            args: &[Ty::F32],
+            returns: &[Ty::F32],
         },
         None,
         &[
@@ -26,8 +26,8 @@ const ALL_FUNCTIONS: &[(Signature, Option<Signature>, &[&str])] = &[
     (
         // `(f64) -> f64`
         Signature {
-            args: Cow::Borrowed(&[Ty::F64]),
-            returns: Cow::Borrowed(&[Ty::F64]),
+            args: &[Ty::F64],
+            returns: &[Ty::F64],
         },
         None,
         &[
@@ -40,8 +40,8 @@ const ALL_FUNCTIONS: &[(Signature, Option<Signature>, &[&str])] = &[
     (
         // `(f32, f32) -> f32`
         Signature {
-            args: Cow::Borrowed(&[Ty::F32, Ty::F32]),
-            returns: Cow::Borrowed(&[Ty::F32]),
+            args: &[Ty::F32, Ty::F32],
+            returns: &[Ty::F32],
         },
         None,
         &[
@@ -60,8 +60,8 @@ const ALL_FUNCTIONS: &[(Signature, Option<Signature>, &[&str])] = &[
     (
         // `(f64, f64) -> f64`
         Signature {
-            args: Cow::Borrowed(&[Ty::F64, Ty::F64]),
-            returns: Cow::Borrowed(&[Ty::F64]),
+            args: &[Ty::F64, Ty::F64],
+            returns: &[Ty::F64],
         },
         None,
         &[
@@ -80,8 +80,8 @@ const ALL_FUNCTIONS: &[(Signature, Option<Signature>, &[&str])] = &[
     (
         // `(f32, f32, f32) -> f32`
         Signature {
-            args: Cow::Borrowed(&[Ty::F32, Ty::F32, Ty::F32]),
-            returns: Cow::Borrowed(&[Ty::F32]),
+            args: &[Ty::F32, Ty::F32, Ty::F32],
+            returns: &[Ty::F32],
         },
         None,
         &["fmaf"],
@@ -89,8 +89,8 @@ const ALL_FUNCTIONS: &[(Signature, Option<Signature>, &[&str])] = &[
     (
         // `(f64, f64, f64) -> f64`
         Signature {
-            args: Cow::Borrowed(&[Ty::F64, Ty::F64, Ty::F64]),
-            returns: Cow::Borrowed(&[Ty::F64]),
+            args: &[Ty::F64, Ty::F64, Ty::F64],
+            returns: &[Ty::F64],
         },
         None,
         &["fma"],
@@ -98,8 +98,8 @@ const ALL_FUNCTIONS: &[(Signature, Option<Signature>, &[&str])] = &[
     (
         // `(f32) -> i32`
         Signature {
-            args: Cow::Borrowed(&[Ty::F32]),
-            returns: Cow::Borrowed(&[Ty::I32]),
+            args: &[Ty::F32],
+            returns: &[Ty::I32],
         },
         None,
         &["ilogbf"],
@@ -107,8 +107,8 @@ const ALL_FUNCTIONS: &[(Signature, Option<Signature>, &[&str])] = &[
     (
         // `(f64) -> i32`
         Signature {
-            args: Cow::Borrowed(&[Ty::F64]),
-            returns: Cow::Borrowed(&[Ty::I32]),
+            args: &[Ty::F64],
+            returns: &[Ty::I32],
         },
         None,
         &["ilogb"],
@@ -116,8 +116,8 @@ const ALL_FUNCTIONS: &[(Signature, Option<Signature>, &[&str])] = &[
     (
         // `(i32, f32) -> f32`
         Signature {
-            args: Cow::Borrowed(&[Ty::I32, Ty::F32]),
-            returns: Cow::Borrowed(&[Ty::F32]),
+            args: &[Ty::I32, Ty::F32],
+            returns: &[Ty::F32],
         },
         None,
         &["jnf"],
@@ -125,8 +125,8 @@ const ALL_FUNCTIONS: &[(Signature, Option<Signature>, &[&str])] = &[
     (
         // `(i32, f64) -> f64`
         Signature {
-            args: Cow::Borrowed(&[Ty::I32, Ty::F64]),
-            returns: Cow::Borrowed(&[Ty::F64]),
+            args: &[Ty::I32, Ty::F64],
+            returns: &[Ty::F64],
         },
         None,
         &["jn"],
@@ -134,8 +134,8 @@ const ALL_FUNCTIONS: &[(Signature, Option<Signature>, &[&str])] = &[
     (
         // `(f32, i32) -> f32`
         Signature {
-            args: Cow::Borrowed(&[Ty::F32, Ty::I32]),
-            returns: Cow::Borrowed(&[Ty::F32]),
+            args: &[Ty::F32, Ty::I32],
+            returns: &[Ty::F32],
         },
         None,
         &["scalbnf", "ldexpf"],
@@ -143,8 +143,8 @@ const ALL_FUNCTIONS: &[(Signature, Option<Signature>, &[&str])] = &[
     (
         // `(f64, i64) -> f64`
         Signature {
-            args: Cow::Borrowed(&[Ty::F64, Ty::I32]),
-            returns: Cow::Borrowed(&[Ty::F64]),
+            args: &[Ty::F64, Ty::I32],
+            returns: &[Ty::F64],
         },
         None,
         &["scalbn", "ldexp"],
@@ -152,96 +152,96 @@ const ALL_FUNCTIONS: &[(Signature, Option<Signature>, &[&str])] = &[
     (
         // `(f32, &mut f32) -> f32` as `(f32) -> (f32, f32)`
         Signature {
-            args: Cow::Borrowed(&[Ty::F32]),
-            returns: Cow::Borrowed(&[Ty::F32, Ty::F32]),
+            args: &[Ty::F32],
+            returns: &[Ty::F32, Ty::F32],
         },
         Some(Signature {
-            args: Cow::Borrowed(&[Ty::F32, Ty::MutF32]),
-            returns: Cow::Borrowed(&[Ty::F32]),
+            args: &[Ty::F32, Ty::MutF32],
+            returns: &[Ty::F32],
         }),
         &["modff"],
     ),
     (
         // `(f64, &mut f64) -> f64` as  `(f64) -> (f64, f64)`
         Signature {
-            args: Cow::Borrowed(&[Ty::F64]),
-            returns: Cow::Borrowed(&[Ty::F64, Ty::F64]),
+            args: &[Ty::F64],
+            returns: &[Ty::F64, Ty::F64],
         },
         Some(Signature {
-            args: Cow::Borrowed(&[Ty::F64, Ty::MutF64]),
-            returns: Cow::Borrowed(&[Ty::F64]),
+            args: &[Ty::F64, Ty::MutF64],
+            returns: &[Ty::F64],
         }),
         &["modf"],
     ),
     (
         // `(f32, &mut c_int) -> f32` as `(f32) -> (f32, i32)`
         Signature {
-            args: Cow::Borrowed(&[Ty::F32]),
-            returns: Cow::Borrowed(&[Ty::F32, Ty::I32]),
+            args: &[Ty::F32],
+            returns: &[Ty::F32, Ty::I32],
         },
         Some(Signature {
-            args: Cow::Borrowed(&[Ty::F32, Ty::MutCInt]),
-            returns: Cow::Borrowed(&[Ty::F32]),
+            args: &[Ty::F32, Ty::MutCInt],
+            returns: &[Ty::F32],
         }),
         &["frexpf", "lgammaf_r"],
     ),
     (
         // `(f64, &mut c_int) -> f64` as `(f64) -> (f64, i32)`
         Signature {
-            args: Cow::Borrowed(&[Ty::F64]),
-            returns: Cow::Borrowed(&[Ty::F64, Ty::I32]),
+            args: &[Ty::F64],
+            returns: &[Ty::F64, Ty::I32],
         },
         Some(Signature {
-            args: Cow::Borrowed(&[Ty::F64, Ty::MutCInt]),
-            returns: Cow::Borrowed(&[Ty::F64]),
+            args: &[Ty::F64, Ty::MutCInt],
+            returns: &[Ty::F64],
         }),
         &["frexp", "lgamma_r"],
     ),
     (
         // `(f32, f32, &mut c_int) -> f32` as `(f32, f32) -> (f32, i32)`
         Signature {
-            args: Cow::Borrowed(&[Ty::F32, Ty::F32]),
-            returns: Cow::Borrowed(&[Ty::F32, Ty::I32]),
+            args: &[Ty::F32, Ty::F32],
+            returns: &[Ty::F32, Ty::I32],
         },
         Some(Signature {
-            args: Cow::Borrowed(&[Ty::F32, Ty::F32, Ty::MutCInt]),
-            returns: Cow::Borrowed(&[Ty::F32]),
+            args: &[Ty::F32, Ty::F32, Ty::MutCInt],
+            returns: &[Ty::F32],
         }),
         &["remquof"],
     ),
     (
         // `(f64, f64, &mut c_int) -> f64` as `(f64, f64) -> (f64, i32)`
         Signature {
-            args: Cow::Borrowed(&[Ty::F64, Ty::F64]),
-            returns: Cow::Borrowed(&[Ty::F64, Ty::I32]),
+            args: &[Ty::F64, Ty::F64],
+            returns: &[Ty::F64, Ty::I32],
         },
         Some(Signature {
-            args: Cow::Borrowed(&[Ty::F64, Ty::F64, Ty::MutCInt]),
-            returns: Cow::Borrowed(&[Ty::F64]),
+            args: &[Ty::F64, Ty::F64, Ty::MutCInt],
+            returns: &[Ty::F64],
         }),
         &["remquo"],
     ),
     (
         // `(f32, &mut f32, &mut f32)` as `(f32) -> (f32, f32)`
         Signature {
-            args: Cow::Borrowed(&[Ty::F32]),
-            returns: Cow::Borrowed(&[Ty::F32, Ty::F32]),
+            args: &[Ty::F32],
+            returns: &[Ty::F32, Ty::F32],
         },
         Some(Signature {
-            args: Cow::Borrowed(&[Ty::F32, Ty::MutF32, Ty::MutF32]),
-            returns: Cow::Borrowed(&[]),
+            args: &[Ty::F32, Ty::MutF32, Ty::MutF32],
+            returns: &[],
         }),
         &["sincosf"],
     ),
     (
         // `(f64, &mut f64, &mut f64)` as `(f64) -> (f64, f64)`
         Signature {
-            args: Cow::Borrowed(&[Ty::F64]),
-            returns: Cow::Borrowed(&[Ty::F64, Ty::F64]),
+            args: &[Ty::F64],
+            returns: &[Ty::F64, Ty::F64],
         },
         Some(Signature {
-            args: Cow::Borrowed(&[Ty::F64, Ty::MutF64, Ty::MutF64]),
-            returns: Cow::Borrowed(&[]),
+            args: &[Ty::F64, Ty::MutF64, Ty::MutF64],
+            returns: &[],
         }),
         &["sincos"],
     ),
@@ -293,8 +293,8 @@ impl ToTokens for Ty {
 /// Representation of e.g. `(f32, f32) -> f32`
 #[derive(Debug, Clone)]
 struct Signature {
-    args: Cow<'static, [Ty]>,
-    returns: Cow<'static, [Ty]>,
+    args: &'static [Ty],
+    returns: &'static [Ty],
 }
 
 /// Combined information about a function implementation.
