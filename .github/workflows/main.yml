@@ -19,7 +19,7 @@ jobs:
         #   os: macos-latest
         - target: aarch64-unknown-linux-gnu
           # os: ubuntu-latest
-          os: ubuntu-22.04-arm64-8core-32gb
+          os: ubuntu-latest-arm64
         # - target: aarch64-pc-windows-msvc
         #   os: windows-latest
         #   build_only: 1
@@ -60,9 +60,11 @@ jobs:
         - target: i686-pc-windows-gnu
           os: windows-latest
           channel: nightly-i686-gnu
+          # cc: mingw-w64-i686-gcc
         - target: x86_64-pc-windows-gnu
           os: windows-latest
           channel: nightly-x86_64-gnu
+          # cc: mingw-w64-x86_64-gcc
     runs-on: ${{ matrix.os }}
     env:
       BUILD_ONLY: ${{ matrix.build_only }}
@@ -105,7 +107,6 @@ jobs:
       if: contains(matrix.target, 'windows-gnu')
       shell: msys2 {0}
       run: |
-        pacman -S 
         if [[ "${{ matrix.target }}" = "i686"* ]]; then
           pacman -S mingw-w64-i686-gcc
         else
