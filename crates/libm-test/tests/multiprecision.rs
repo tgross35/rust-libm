@@ -122,23 +122,17 @@ libm_macros::for_each_function! {
     callback: musl_rand_tests,
     attributes: [],
     skip: [
-        fmod,fmodf,
-
         frexp,
         frexpf,
         ldexp,
         ldexpf,
+        modf,
+        modff,
         scalbn,
         scalbnf,
 
-        jn,jnf,
-
         ilogb,
         ilogbf,
-        lgamma_r,
-        lgammaf_r,
-        modf,
-        modff,
         remquo,
         remquof,
     ],
@@ -148,17 +142,5 @@ libm_macros::for_each_function! {
     //     //     let i = f.cmp(0) as i32;
     //     //     (f, i)
     //     // },
-    //     fma | fmaf => |x: MpFloat, y: &MpFloat, z: &MpFloat| {
-    //         let res = (&x * y) + z;
-    //         res.complete(128)
-    //     },
-    //     fmod | fmodf => |x: MpFloat, y: &MpFloat| {
-    //         x % y
-    //     },
-    //     nextafter | nextafterf => |mut x: MpFloat, y: &MpFloat| {
-    //         x.next_toward(y);
-    //         x
-    //     },
-    //     pow | powf => |x: MpFloat, y: &MpFloat| x.pow(y),
     // }
 }

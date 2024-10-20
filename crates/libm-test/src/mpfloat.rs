@@ -1,4 +1,5 @@
 use az::Az;
+use std::ops::RemAssign;
 // use rug::ops::Pow;
 use rug::ops::PowAssign;
 use rug::Assign;
@@ -129,7 +130,6 @@ libm_macros::for_each_function! {
     callback: impl_mp_op,
     skip: [
         fmod,fmodf,
-        ilogb,ilogbf,
         nextafter,nextafterf,
         pow,powf,
 
@@ -224,6 +224,77 @@ macro_rules! impl_for_both {
                 }
             }
 
+            pub mod [<fmod $suffix>] {
+                use super::*;
+                pub struct Operation(MpFloat, MpFloat);
+
+                impl MpOp for Operation {
+                    type Input = ($fty, $fty);
+                    type Output = $fty;
+
+                    fn new() -> Self {
+                        // TODO precision
+                        Self(MpFloat::new(PREC_F64), MpFloat::new(PREC_F64))
+                    }
+
+                    fn assign_run(&mut self, input: Self::Input) -> Self::Output {
+                        self.0.assign(input.0);
+                        self.1.assign(input.1);
+                        self.0.rem_assign(&self.1);
+
+                        // TODO subnormalize
+                        (&self.0).az::<$fty>()
+                    }
+                }
+            }
+
+            pub mod [<lgamma_r $suffix>] {
+                use super::*;
+                pub struct Operation(MpFloat);
+
+                impl MpOp for Operation {
+                    type Input = ($fty,);
+                    type Output = ($fty, i32);
+
+                    fn new() -> Self {
+                        // TODO precision
+                        Self(MpFloat::new(PREC_F64))
+                    }
+
+                    fn assign_run(&mut self, input: Self::Input) -> Self::Output {
+                        self.0.assign(input.0);
+                        let ordering = self.0.ln_abs_gamma_mut();
+
+                        // TODO subnormalize
+                        ((&self.0).az::<$fty>(), ordering as i32)
+                    }
+                }
+            }
+
+            pub mod [<jn $suffix>] {
+                use super::*;
+                pub struct Operation(i32, MpFloat);
+
+                impl MpOp for Operation {
+                    type Input = (i32, $fty);
+                    type Output = $fty;
+
+                    fn new() -> Self {
+                        // TODO precision
+                        Self(0, MpFloat::new(PREC_F64))
+                    }
+
+                    fn assign_run(&mut self, input: Self::Input) -> Self::Output {
+                        self.0 = input.0;
+                        self.1.assign(input.1);
+                        self.1.jn_mut(self.0);
+
+                        // TODO subnormalize
+                        (&self.1).az::<$fty>()
+                    }
+                }
+            }
+
             pub mod [<sincos $suffix>] {
                 use super::*;
                 pub struct Operation(MpFloat, MpFloat);
@@ -253,3 +324,8 @@ macro_rules! impl_for_both {
 
 impl_for_both!(f32, "f");
 impl_for_both!(f64, "");
+
+// Account for `lgamma_r` not having `f` as a suffix
+pub mod lgammaf_r {
+    pub use super::lgamma_rf::*;
+}
