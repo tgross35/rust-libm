@@ -79,6 +79,7 @@ jobs:
         rustup default "$channel"
         rustup target add ${{ matrix.target }}
         rustup component add llvm-tools-preview
+        printenv
     - uses: Swatinem/rust-cache@v2
       with:
         key: ${{ matrix.target }}
@@ -99,9 +100,11 @@ jobs:
       shell: bash
 
     - name: Run in msys
-      run: ./ci/run.sh ${{ matrix.target }}
       if: contains(matrix.target, 'windows-gnu')
       shell: msys2 {0}
+      run: |
+        
+        ./ci/run.sh ${{ matrix.target }}
 
     # Otherwise we use our docker containers to run builds
     - name: Run in Docker
