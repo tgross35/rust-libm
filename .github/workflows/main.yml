@@ -83,7 +83,8 @@ jobs:
 
     - uses: msys2/setup-msys2@v2
       if: contains(matrix.target, "windws-gnu")
-      install: [m4, make]
+      with:
+        install: [m4, make]
 
     - name: Download musl source
       run: ./ci/download-musl.sh
