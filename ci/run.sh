@@ -34,8 +34,11 @@ if [ "${BUILD_ONLY:-}" = "1" ]; then
 
     echo "no tests to run for no_std"
 else
-    cmd="cargo test --all --target $target $exclude_flag"
+    # Enable cross compilation for gmp-mpfr-sys (setting via Cargo.toml or CLI
+    # does not seem to work)
+    export CARGO_FEATURE_FORCE_CROSS=1
 
+    cmd="cargo test --all --target $target $exclude_flag"
 
     # stable by default
     $cmd

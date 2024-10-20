@@ -18,8 +18,6 @@ libm = { path = "../.." }
 libm-macros = { path = "../libm-macros" }
 paste = "1.0.15"
 rug = { version = "1.26.1", optional = true, default-features = false, features = ["float", "std"] }
-# Not used directly, only to enable `force-cross`
-gmp-mpfr-sys = { version = "1.6.4", feature = ["force-cross"] }
 
 # We can't build musl on MSVC or wasm
 [target.'cfg(not(any(target_env = "msvc", target_family = "wasm", target_feature = "thumb-mode")))'.dependencies]
