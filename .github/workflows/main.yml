@@ -82,7 +82,7 @@ jobs:
         key: ${{ matrix.target }}
 
     - uses: msys2/setup-msys2@v2
-      if: contains(matrix.target, "windws-gnu")
+      if: contains(matrix.target, 'windws-gnu')
       with:
         install: m4 make
 
