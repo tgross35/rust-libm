@@ -3,7 +3,7 @@ FROM ubuntu:24.04
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     gcc libc6-dev ca-certificates \
-    gcc-arm-linux-gnueabi m4 \
+    gcc-arm-linux-gnueabi m4 make \
     libc6-dev-armel-cross qemu-user-static
 
 ENV TOOLCHAIN_PREFIX=arm-linux-gnueabi-

@@ -3,7 +3,7 @@ FROM ubuntu:24.04
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     gcc libc6-dev ca-certificates \
-    gcc-arm-linux-gnueabihf m4 \
+    gcc-arm-linux-gnueabihf m4 make \
     libc6-dev-armhf-cross qemu-user-static
 
 ENV TOOLCHAIN_PREFIX=arm-linux-gnueabihf-

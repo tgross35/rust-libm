@@ -34,7 +34,7 @@ if [ "${BUILD_ONLY:-}" = "1" ]; then
 
     echo "no tests to run for no_std"
 else
-    cmd="cargo test --all --target $target $exclude_flag"
+    cmd="cargo test --all --target $target $exclude_flag --features gmp_mpfr_sys/force-cross"
 
 
     # stable by default
