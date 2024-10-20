@@ -91,7 +91,6 @@ macro_rules! musl_rand_tests {
         RugArgs: $RugArgs:ty,
         RugRet: $RugRet:ty,
         attrs: [$($meta:meta)*]
-        fn_extra: $rug_expr:expr,
     ) => {
         paste::paste! {
             #[test]
@@ -128,14 +127,16 @@ libm_macros::for_each_function! {
     skip: [
         atan2,atan2f,
         copysign,copysignf,
-        expm1,expm1f,
-        fabs,fabsf,fdim,fdimf,floor,floorf,fma,fmaf,fmax,fmaxf,
-        fmin,fminf,fmod,fmodf,frexp,frexpf,hypot,hypotf,ilogb,ilogbf,j0,j0f,
-        j1,j1f,jn,jnf,ldexp,ldexpf,lgamma,lgamma_r,lgammaf,lgammaf_r,
-        modf,modff,nextafter,nextafterf,pow,powf,
-        remainder,remainderf,remquo,remquof,rint,rintf,
-        round,roundf,scalbn,scalbnf,sin,sincos,sincosf,sinf,sinh,sinhf,sqrt,sqrtf,
-        tgamma,tgammaf,trunc,truncf,
+        fdim,fdimf,
+        fma,fmaf,
+        fmax,fmaxf,
+        fmin,fminf,
+        fmod,fmodf,
+        hypot,hypotf,
+        ilogb,ilogbf,
+        nextafter,nextafterf,
+        pow,powf,
+        remainder,remainderf,
 
         frexp,
         frexpf,
@@ -154,45 +155,37 @@ libm_macros::for_each_function! {
         modff,
         remquo,
         remquof,
-        // sincos,
+        sincos,
         sincosf,
     ],
-    fn_extra: match MACRO_FN_NAME {
-        // (lgamma_r | lgammaf_r) => |x| {
-        //     let f = x.ln_gamma();
-        //     let i = f.cmp(0) as i32;
-        //     (f, i)
-        // },
-        expm1 | expm1f => MpFloat::exp_m1,
-        fabs | fabsf => MpFloat::abs,
-        fdim | fdimf => MpFloat::positive_diff,
-        fma | fmaf => |x: MpFloat, y: &MpFloat, z: &MpFloat| {
-            let res = (&x * y) + z;
-            res.complete(128)
-        },
-        fmax | fmaxf => MpFloat::max,
-        fmin | fminf => MpFloat::min,
-        fmod | fmodf => |x: MpFloat, y: &MpFloat| {
-            x % y
-        },
-        lgamma | lgammaf => MpFloat::ln_gamma,
-        log | logf => MpFloat::ln,
-        log1p | log1pf => MpFloat::log10_1p,
-        nextafter | nextafterf => |mut x: MpFloat, y: &MpFloat| {
-            x.next_toward(y);
-            x
-        },
-        pow | powf => |x: MpFloat, y: &MpFloat| x.pow(y),
-        rint | rintf => |x: MpFloat| x.round(),
-        tgamma | tgammaf => MpFloat::gamma,
-        sincos | sincosf => |x: MpFloat| {
-            let cos = MpFloat::new(128);
-            x.sin_cos(cos)
+    // fn_extra: match MACRO_FN_NAME {
+    //     // (lgamma_r | lgammaf_r) => |x| {
+    //     //     let f = x.ln_gamma();
+    //     //     let i = f.cmp(0) as i32;
+    //     //     (f, i)
+    //     // },
+    //     fdim | fdimf => MpFloat::positive_diff,
+    //     fma | fmaf => |x: MpFloat, y: &MpFloat, z: &MpFloat| {
+    //         let res = (&x * y) + z;
+    //         res.complete(128)
+    //     },
+    //     fmax | fmaxf => MpFloat::max,
+    //     fmin | fminf => MpFloat::min,
+    //     fmod | fmodf => |x: MpFloat, y: &MpFloat| {
+    //         x % y
+    //     },
+    //     nextafter | nextafterf => |mut x: MpFloat, y: &MpFloat| {
+    //         x.next_toward(y);
+    //         x
+    //     },
+    //     pow | powf => |x: MpFloat, y: &MpFloat| x.pow(y),
+    //     sincos | sincosf => |x: MpFloat| {
+    //         let cos = MpFloat::new(128);
+    //         x.sin_cos(cos)
 
-        },
+    //     },
 
-        // MpFloat::sin_cos,
-        // (sincos | sincosf) => MpFloat::sin_cos,
-        _ => MpFloat::MACRO_FN_NAME_NORMALIZED,
-    }
+    //     sincos | sincosf => MpFloat::sin_cos,
+    //     _ => MpFloat::MACRO_FN_NAME_NORMALIZED,
+    // }
 }
