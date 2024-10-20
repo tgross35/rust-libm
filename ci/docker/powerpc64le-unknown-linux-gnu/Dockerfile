@@ -3,7 +3,7 @@ FROM ubuntu:24.04
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     gcc libc6-dev qemu-user-static ca-certificates \
-    gcc-powerpc64le-linux-gnu libc6-dev-ppc64el-cross \
+    gcc-powerpc64le-linux-gnu m4 libc6-dev-ppc64el-cross \
     qemu-system-ppc
 
 ENV TOOLCHAIN_PREFIX=powerpc64le-linux-gnu-

@@ -5,6 +5,7 @@ RUN apt-get update && \
     ca-certificates \
     gcc \
     gcc-mips64el-linux-gnuabi64 \
+    m4 \
     libc6-dev \
     libc6-dev-mips64el-cross \
     qemu-user-static

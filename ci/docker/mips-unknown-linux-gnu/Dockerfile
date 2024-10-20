@@ -3,7 +3,7 @@ FROM ubuntu:24.04
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     gcc libc6-dev ca-certificates \
-    gcc-mips-linux-gnu libc6-dev-mips-cross \
+    gcc-mips-linux-gnu m4 libc6-dev-mips-cross \
     binfmt-support qemu-user-static qemu-system-mips
 
 ENV TOOLCHAIN_PREFIX=mips-linux-gnu-
