@@ -105,7 +105,7 @@ jobs:
       shell: msys2 {0}
       run: |
         echo "$PATH"
-        export PATH="$PATH:$HOME/.cargo"
+        export PATH="$PATH:/c/Users/runneradmin/.cargo"
         echo "$PATH"
         ./ci/run.sh ${{ matrix.target }}
 
