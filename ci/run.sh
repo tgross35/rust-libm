@@ -4,7 +4,7 @@ set -eux
 
 export RUST_BACKTRACE="${RUST_BACKTRACE:-full}"
 # Needed for no-panic to correct detect a lack of panics
-export RUSTFLAGS="$RUSTFLAGS -Ccodegen-units=1"
+export RUSTFLAGS="${RUSTFLAGS:-} -Ccodegen-units=1"
 
 target="${1:-}"
 
@@ -14,17 +14,33 @@ if [ -z "$target" ]; then
     target="$host_target"
 fi
 
+# Config for the following:
+#
+# - Targets that aren't cross compiled can build MPFR for multiprecision tests
+# - Targets that musl-math-sys can't build on need to specifically exclude that
+#   crate
+# - windows-gnu has a problem testing proc macros
 
-# We nceed to specifically skip tests for this crate on systems that can't
-# build musl since otherwise `--all` will activate it.
+# arch-dpecific configuration
 case "$target" in
-    *msvc*) exclude_flag="--exclude musl-math-sys" ;;
-    *wasm*) exclude_flag="--exclude musl-math-sys" ;;
-    *thumb*) exclude_flag="--exclude musl-math-sys" ;;
+    # x86 and aarch64 get run on real hosts
+    aarch64*) extra_flags="--features libm-test/multiprecision-tests" ;;
+    i*86*) extra_flags="--features libm-test/multiprecision-tests" ;;
+    x86*) extra_flags="--features libm-test/multiprecision-tests" ;;
+    # can't build musl
+    *wasm*) extra_flags="--exclude musl-math-sys" ;;
+    *thumb*) extra_flags="--exclude musl-math-sys" ;;
+    # can't cross compile
+    *) extra_flags="" ;;
+esac
+
+# os-specific configuration
+case "$target" in
+    *apple*) extra_flags="$extra_flags --features libm-test/multiprecision-tests" ;;
+    *windows-msvc*) extra_flags="$extra_flags --exclude musl-math-sys" ;;
     # FIXME: `STATUS_DLL_NOT_FOUND` on CI for some reason
     # <https://github.com/rust-lang/rust/issues/128944>
-    *windows-gnu) exclude_flag="--exclude libm-macros" ;;
-    *) exclude_flag="" ;;
+    *windows-gnu) extra_flags="$extra_flags --exclude libm-macros" ;;
 esac
 
 if [ "${BUILD_ONLY:-}" = "1" ]; then
@@ -34,11 +50,7 @@ if [ "${BUILD_ONLY:-}" = "1" ]; then
 
     echo "no tests to run for no_std"
 else
-    # Enable cross compilation for gmp-mpfr-sys (setting via Cargo.toml or CLI
-    # does not seem to work)
-    export CARGO_FEATURE_FORCE_CROSS=1
-
-    cmd="cargo test --all --target $target $exclude_flag"
+    cmd="cargo test --all --target $target $extra_flags"
 
     # stable by default
     $cmd

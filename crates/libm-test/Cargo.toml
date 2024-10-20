@@ -5,7 +5,7 @@ edition = "2021"
 publish = false
 
 [features]
-default = ["multiprecision-tests"]
+default = []
 
 # Generate tests which are random inputs and the outputs are calculated with
 # musl libc.
