@@ -104,7 +104,9 @@ jobs:
       if: contains(matrix.target, 'windows-gnu')
       shell: msys2 {0}
       run: |
-        
+        echo "$PATH"
+        export PATH="$PATH:$HOME/.cargo"
+        echo "$PATH"
         ./ci/run.sh ${{ matrix.target }}
 
     # Otherwise we use our docker containers to run builds
