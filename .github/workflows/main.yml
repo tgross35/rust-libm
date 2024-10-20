@@ -63,6 +63,8 @@ jobs:
           os: windows-latest
           channel: nightly-x86_64-gnu
     runs-on: ${{ matrix.os }}
+    env:
+      BUILD_ONLY: ${{ matrix.build_only }}
     steps:
     - name: Print runner information
       run: uname -a
@@ -93,10 +95,13 @@ jobs:
     # Non-linux tests just use our raw script
     - name: Run locally
       run: ./ci/run.sh ${{ matrix.target }}
-      if: matrix.os != 'ubuntu-latest'
+      if: matrix.os != 'ubuntu-latest' && !contains(matrix.target, 'windows-gnu')
       shell: bash
-      env:
-        BUILD_ONLY: ${{ matrix.build_only }}
+
+    - name: Run in msys
+      run: ./ci/run.sh ${{ matrix.target }}
+      if: contains(matrix.target, 'windows-gnu')
+      shell: msys2 {0}
 
     # Otherwise we use our docker containers to run builds
     - name: Run in Docker
