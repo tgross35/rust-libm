@@ -73,6 +73,9 @@ jobs:
         channel="nightly"
         # Account for channels that have required components (MinGW)
         [ -n "${{ matrix.channel }}" ] && channel="${{ matrix.channel }}"
+        # Install dependencies for building system libraries on windows-gnu
+        [[ "${{ matrix.target }}" == *"windows-gnu"* ]] && pacman -S m4 make
+
         rustup update "$channel" --no-self-update
         rustup default "$channel"
         rustup target add ${{ matrix.target }}
