@@ -108,6 +108,7 @@ jobs:
       run: |
         # Need to update path since it is set for the default bash, not msys
         export PATH="$PATH:/c/Users/runneradmin/.cargo/bin"
+        export CC="${{ matrix.cc }}"
         ./ci/run.sh ${{ matrix.target }} || true
         find target -name config.log
         find target -name config.log | xargs cat
