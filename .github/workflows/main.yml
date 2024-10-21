@@ -15,55 +15,53 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        # - target: aarch64-apple-darwin
-        #   os: macos-latest
+        - target: aarch64-apple-darwin
+          os: macos-latest
         - target: aarch64-unknown-linux-gnu
           os: ubuntu-latest
-        # - target: aarch64-pc-windows-msvc
-        #   os: windows-latest
-        #   build_only: 1
-        # - target: arm-unknown-linux-gnueabi
-        #   os: ubuntu-latest
-        # - target: arm-unknown-linux-gnueabihf
-        #   os: ubuntu-latest
-        # - target: armv7-unknown-linux-gnueabihf
-        #   os: ubuntu-latest
-        # - target: i586-unknown-linux-gnu
-        #   os: ubuntu-latest
-        # - target: i686-unknown-linux-gnu
-        #   os: ubuntu-latest
-        # - target: powerpc-unknown-linux-gnu
-        #   os: ubuntu-latest
-        # - target: powerpc64-unknown-linux-gnu
-        #   os: ubuntu-latest
-        # - target: powerpc64le-unknown-linux-gnu
-        #   os: ubuntu-latest
-        # - target: riscv64gc-unknown-linux-gnu
-        #   os: ubuntu-latest
-        # - target: thumbv6m-none-eabi
-        #   os: ubuntu-latest
-        # - target: thumbv7em-none-eabi
-        #   os: ubuntu-latest
-        # - target: thumbv7em-none-eabihf
-        #   os: ubuntu-latest
-        # - target: thumbv7m-none-eabi
-        #   os: ubuntu-latest
+        - target: aarch64-pc-windows-msvc
+          os: windows-latest
+          build_only: 1
+        - target: arm-unknown-linux-gnueabi
+          os: ubuntu-latest
+        - target: arm-unknown-linux-gnueabihf
+          os: ubuntu-latest
+        - target: armv7-unknown-linux-gnueabihf
+          os: ubuntu-latest
+        - target: i586-unknown-linux-gnu
+          os: ubuntu-latest
+        - target: i686-unknown-linux-gnu
+          os: ubuntu-latest
+        - target: powerpc-unknown-linux-gnu
+          os: ubuntu-latest
+        - target: powerpc64-unknown-linux-gnu
+          os: ubuntu-latest
+        - target: powerpc64le-unknown-linux-gnu
+          os: ubuntu-latest
+        - target: riscv64gc-unknown-linux-gnu
+          os: ubuntu-latest
+        - target: thumbv6m-none-eabi
+          os: ubuntu-latest
+        - target: thumbv7em-none-eabi
+          os: ubuntu-latest
+        - target: thumbv7em-none-eabihf
+          os: ubuntu-latest
+        - target: thumbv7m-none-eabi
+          os: ubuntu-latest
         - target: x86_64-unknown-linux-gnu
           os: ubuntu-latest
-        # - target: x86_64-apple-darwin
-        #   os: macos-13
-        # - target: i686-pc-windows-msvc
-        #   os: windows-latest
-        # - target: x86_64-pc-windows-msvc
-        #   os: windows-latest
+        - target: x86_64-apple-darwin
+          os: macos-13
+        - target: i686-pc-windows-msvc
+          os: windows-latest
+        - target: x86_64-pc-windows-msvc
+          os: windows-latest
         - target: i686-pc-windows-gnu
           os: windows-latest
           channel: nightly-i686-gnu
-          cc: mingw-w64-i686-gcc
         - target: x86_64-pc-windows-gnu
           os: windows-latest
           channel: nightly-x86_64-gnu
-          cc: mingw-w64-x86_64-gcc
     runs-on: ${{ matrix.os }}
     env:
       BUILD_ONLY: ${{ matrix.build_only }}
@@ -81,16 +79,9 @@ jobs:
         rustup default "$channel"
         rustup target add ${{ matrix.target }}
         rustup component add llvm-tools-preview
-        printenv
-        which cargo
     - uses: Swatinem/rust-cache@v2
       with:
         key: ${{ matrix.target }}
-
-    - uses: msys2/setup-msys2@v2
-      if: contains(matrix.target, 'windows-gnu')
-      with:
-        install: m4 make ${{ matrix.cc }}
 
     - name: Download musl source
       run: ./ci/download-musl.sh
@@ -98,20 +89,9 @@ jobs:
 
     # Non-linux tests just use our raw script
     - name: Run locally
-      run: ./ci/run.sh ${{ matrix.target }}
-      if: matrix.os != 'ubuntu-latest' && !contains(matrix.target, 'windows-gnu')
+      if: matrix.os != 'ubuntu-latest'
       shell: bash
-
-    - name: Run in msys
-      if: contains(matrix.target, 'windows-gnu')
-      shell: msys2 {0}
-      run: |
-        # Need to update path since it is set for the default bash, not msys
-        export PATH="$PATH:/c/Users/runneradmin/.cargo/bin"
-        export CC="${{ matrix.cc }}"
-        ./ci/run.sh ${{ matrix.target }} || true
-        find target -name config.log
-        find target -name config.log | xargs cat
+      run: ./ci/run.sh ${{ matrix.target }}
 
     # Otherwise we use our docker containers to run builds
     - name: Run in Docker

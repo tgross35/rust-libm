@@ -20,8 +20,8 @@ extra_flags=""
 case "$target" in
     # MSVC cannot link MPFR
     *windows-msvc*) ;;
-    # # FIXME: MinGW should be able to build MPFR, but setup in CI is nontrivial.
-    # *windows-gnu*) ;;
+    # FIXME: MinGW should be able to build MPFR, but setup in CI is nontrivial.
+    *windows-gnu*) ;;
     # Targets that aren't cross compiled work fine
     x86_64*) extra_flags="$extra_flags --features libm-test/multiprecision-tests" ;;
     # i686 works fine, i586 does not
