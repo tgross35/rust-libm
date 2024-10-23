@@ -2,10 +2,14 @@ use std::{fmt, ops};
 
 /// Common types and methods for floating point numbers.
 pub trait Float:
-    Copy + fmt::Display + fmt::Debug + PartialEq<Self> + ops::Neg<Output = Self> + 'static
+    Copy + fmt::Display + fmt::Debug + PartialEq<Self> + PartialOrd + ops::Neg<Output = Self> + 'static
 {
     type Int: Int<OtherSign = Self::SignedInt, Unsigned = Self::Int>;
     type SignedInt: Int + Int<OtherSign = Self::Int, Unsigned = Self::Int>;
+
+    const ZERO: Self;
+    const ONE: Self;
+    const NEG_ONE: Self;
 
     /// The bitwidth of the float type
     const BITS: u32;
@@ -19,6 +23,7 @@ pub trait Float:
     const CONSTS: FloatConsts<Self>;
 
     fn is_nan(self) -> bool;
+    fn is_infinite(self) -> bool;
     fn to_bits(self) -> Self::Int;
     fn from_bits(bits: Self::Int) -> Self;
     fn signum(self) -> Self;
@@ -27,6 +32,8 @@ pub trait Float:
 pub struct FloatConsts<F: Float> {
     pub pi: F,
     pub neg_pi: F,
+    pub inf: F,
+    pub neg_inf: F,
 }
 
 macro_rules! impl_float {
@@ -36,16 +43,25 @@ macro_rules! impl_float {
                 type Int = $ui;
                 type SignedInt = $si;
 
+                const ZERO: Self = 0.0;
+                const ONE: Self = 1.0;
+                const NEG_ONE: Self = -1.0;
+
                 const BITS: u32 = <$ui>::BITS;
                 const SIGNIFICAND_BITS: u32 = $significand_bits;
 
                 const CONSTS: FloatConsts<Self> = FloatConsts {
                     pi: core::$fty::consts::PI,
                     neg_pi: -core::$fty::consts::PI,
+                    inf: core::$fty::INFINITY,
+                    neg_inf: core::$fty::NEG_INFINITY,
                 };
 
                 fn is_nan(self) -> bool {
                     self.is_nan()
+                }
+                fn is_infinite(self) -> bool {
+                    self.is_infinite()
                 }
                 fn to_bits(self) -> Self::Int {
                     self.to_bits()
