@@ -197,6 +197,7 @@ pub mod log2 {
 
 pub mod modf {}
 pub mod nextafter {}
+
 pub mod rint {
     pub use super::log::D;
 }
@@ -207,7 +208,15 @@ pub mod sincos {
     pub use super::sin::D;
 }
 
-pub mod sqrt {}
+pub mod sqrt {
+    use super::*;
+    pub struct D;
+
+    impl<F: Float> Domain<F> for D {
+        const DEFINED: (Bound<F>, Bound<F>) = positive();
+    }
+}
+
 pub mod tgamma {}
 
 pub mod trunc {
@@ -233,6 +242,11 @@ pub mod scalbn {}
 /// x ∈ ℝ
 const fn unbounded<F: Float>() -> (Bound<F>, Bound<F>) {
     (Bound::Unbounded, Bound::Unbounded)
+}
+
+/// x ∈ ℝ >= 0
+const fn positive<F: Float>() -> (Bound<F>, Bound<F>) {
+    (Bound::Included(F::ZERO), Bound::Unbounded)
 }
 
 /// x ∈ ℝ > 0

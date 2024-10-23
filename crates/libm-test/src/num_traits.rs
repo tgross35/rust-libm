@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::{fmt, ops};
 
 /// Common types and methods for floating point numbers.
@@ -27,6 +28,7 @@ pub trait Float:
     fn to_bits(self) -> Self::Int;
     fn from_bits(bits: Self::Int) -> Self;
     fn signum(self) -> Self;
+    fn total_cmp(&self, other: &Self) -> Ordering;
 }
 
 pub struct FloatConsts<F: Float> {
@@ -71,6 +73,9 @@ macro_rules! impl_float {
                 }
                 fn signum(self) -> Self {
                     self.signum()
+                }
+                fn total_cmp(&self, other: &Self) -> Ordering {
+                    self.total_cmp(other)
                 }
             }
 
