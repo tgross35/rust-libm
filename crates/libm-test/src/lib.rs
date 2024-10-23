@@ -1,3 +1,4 @@
+mod domain;
 pub mod gen;
 mod num_traits;
 mod test_traits;
@@ -39,4 +40,10 @@ pub fn xfail<F: Float>(actual: F, expected: F, ctx: &CheckCtx) -> bool {
         (CheckBasis::Musl, "tgamma" | "tgammaf") if actual.is_nan() && expected.is_nan() => true,
         _ => false,
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Sign {
+    Positive,
+    Negative,
 }

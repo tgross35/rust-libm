@@ -1,7 +1,9 @@
-use std::fmt;
+use std::{fmt, ops};
 
 /// Common types and methods for floating point numbers.
-pub trait Float: Copy + fmt::Display + fmt::Debug + PartialEq<Self> {
+pub trait Float:
+    Copy + fmt::Display + fmt::Debug + PartialEq<Self> + ops::Neg<Output = Self> + 'static
+{
     type Int: Int<OtherSign = Self::SignedInt, Unsigned = Self::Int>;
     type SignedInt: Int + Int<OtherSign = Self::Int, Unsigned = Self::Int>;
 
@@ -14,14 +16,21 @@ pub trait Float: Copy + fmt::Display + fmt::Debug + PartialEq<Self> {
     /// The bitwidth of the exponent
     const EXPONENT_BITS: u32 = Self::BITS - Self::SIGNIFICAND_BITS - 1;
 
+    const CONSTS: FloatConsts<Self>;
+
     fn is_nan(self) -> bool;
     fn to_bits(self) -> Self::Int;
     fn from_bits(bits: Self::Int) -> Self;
     fn signum(self) -> Self;
 }
 
+pub struct FloatConsts<F: Float> {
+    pub pi: F,
+    pub neg_pi: F,
+}
+
 macro_rules! impl_float {
-    ($($fty:ty, $ui:ty, $si:ty, $significand_bits:expr;)+) => {
+    ($($fty:ident, $ui:ty, $si:ty, $significand_bits:expr;)+) => {
         $(
             impl Float for $fty {
                 type Int = $ui;
@@ -29,6 +38,11 @@ macro_rules! impl_float {
 
                 const BITS: u32 = <$ui>::BITS;
                 const SIGNIFICAND_BITS: u32 = $significand_bits;
+
+                const CONSTS: FloatConsts<Self> = FloatConsts {
+                    pi: core::$fty::consts::PI,
+                    neg_pi: -core::$fty::consts::PI,
+                };
 
                 fn is_nan(self) -> bool {
                     self.is_nan()
