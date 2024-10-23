@@ -38,6 +38,7 @@ pub trait Float:
     const MAX: Self;
     const MIN: Self;
     const PI: Self;
+    const NEG_PI: Self;
     const FRAC_PI_2: Self;
 
     /// The bitwidth of the float type
@@ -176,6 +177,7 @@ macro_rules! float_impl {
             };
 
             const PI: Self = core::$ty::consts::PI;
+            const NEG_PI: Self = -Self::PI;
             const FRAC_PI_2: Self = core::$ty::consts::FRAC_PI_2;
 
             const BITS: u32 = $bits;
