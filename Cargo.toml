@@ -24,7 +24,7 @@ force-soft-floats = []
 
 [workspace]
 members = [
-  "crates/compiler-builtins-smoke-test",
+  # "crates/compiler-builtins-smoke-test",
   "crates/libm-bench",
   "crates/libm-test",
 ]
