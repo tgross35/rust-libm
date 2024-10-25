@@ -326,6 +326,7 @@ pub use self::truncf::truncf;
 // Private modules
 mod expo2;
 mod fenv;
+mod generic;
 mod k_cos;
 mod k_cosf;
 mod k_expo2;
@@ -337,6 +338,7 @@ mod k_tanf;
 mod rem_pio2;
 mod rem_pio2_large;
 mod rem_pio2f;
+mod traits;
 
 // Private re-imports
 use self::expo2::expo2;

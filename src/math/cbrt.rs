@@ -47,6 +47,10 @@ fn __builtin_copysign(x: f64, y: f64) -> f64 {
     unsafe { intrinsics::copysignf64(x, y) }
 }
 
+fn __builtin_fma(x: f64, y: f64, z: f64) -> f64 {
+    unsafe { intrinsics::fmaf64(x, y, z) }
+}
+
 type FExcept = u32;
 
 fn get_rounding_mode(_flag: &mut FExcept) -> i32 {
@@ -87,11 +91,10 @@ fn cr_cbrt(x: f64) -> f64 {
     let mut mant: u64 = hx & (u64::MAX >> 12);
     let sign: u64 = hx >> 63;
 
-    // unsigned e = (hx>>52)&0x7ff;
     let mut e: u32 = (hx >> 52) as u32 & 0x7ff;
-    // if(__builtin_expect(((e+1)&0x7ff)<2, 0)){
+
+    // Check if we have 2
     if __builtin_expect(((e + 1) & 0x7ff) < 2, false) {
-        // uint64_t ix = hx&((~(uint64_t)0)>>1);
         let ix: u64 = hx & (u64::MAX >> 1);
         /* 0, inf, nan: we return x + x instead of simply x,
         to that for x a signaling NaN, it correctly triggers
@@ -100,8 +103,8 @@ fn cr_cbrt(x: f64) -> f64 {
             return x + x;
         }
 
-        // /* use __builtin_clzll otherwise ix might be truncated to 32 bits
-        //    on 32-bit processors */
+        /* use __builtin_clzll otherwise ix might be truncated to 32 bits
+        on 32-bit processors */
         let nz = ix.leading_zeros() - 11; /* subnormal */
         mant <<= nz;
         mant &= u64::MAX >> 12;
@@ -119,9 +122,8 @@ fn cr_cbrt(x: f64) -> f64 {
     cvt5 += u64::from(it) << 52;
     cvt5 |= sign << 63;
     let zz: f64 = f64::from_bits(cvt5);
-    /* cbrt(x) = cbrt(zz)*2^(et-1365) where 1 <= zz < 8 */
-    // uint64_t isc = ((const uint64_t*)escale)[it];
 
+    /* cbrt(x) = cbrt(zz)*2^(et-1365) where 1 <= zz < 8 */
     let mut isc: u64 = ESCALE[it as usize].to_bits(); // todo: index
     isc |= sign << 63;
     let cvt2: u64 = isc;
@@ -146,10 +148,10 @@ fn cr_cbrt(x: f64) -> f64 {
     and rr an approximation of 1/zz. We now perform another iteration of
     Newton-Raphson, this time with a linear approximation only. */
     y2 = y * y;
-    let mut y2l: f64 = unsafe { intrinsics::fmaf64(y, y, -y2) };
+    let mut y2l: f64 = __builtin_fma(y, y, -y2);
     /* y2 + y2l = y^2 exactly */
     let mut y3: f64 = y2 * y;
-    let mut y3l: f64 = unsafe { intrinsics::fmaf64(y, y2, -y3) } + y * y2l;
+    let mut y3l: f64 = __builtin_fma(y, y2, -y3) + y * y2l;
     /* y3 + y3l approximates y^3 with about 106 bits of accuracy */
     h = ((y3 - zz) + y3l) * rr;
     let mut dy: f64 = h * (y * u0);
@@ -158,18 +160,18 @@ fn cr_cbrt(x: f64) -> f64 {
     dy = (y - y1) - dy;
     /* the approximation of zz^(1/3) is now y1 + dy, where |dy| < 1/2 ulp(y)
     (for rounding to nearest) */
-    let mut ady: f64 = unsafe { intrinsics::fabsf64(dy) };
+    let mut ady: f64 = __builtin_fabs(dy);
     /* For directed roundings, ady0 is tiny when dy is tiny, or ady0 is near
     from ulp(1);
     for rounding to nearest, ady0 is tiny when dy is near from 1/2 ulp(1),
     or from 3/2 ulp(1). */
-    let mut ady0: f64 = unsafe { intrinsics::fabsf64(ady - off[rm as usize]) };
-    let mut ady1: f64 = unsafe { intrinsics::fabsf64(ady - (hf64!("0x1p-52") + off[rm as usize])) };
+    let mut ady0: f64 = __builtin_fabs(ady - off[rm as usize]);
+    let mut ady1: f64 = __builtin_fabs(ady - (hf64!("0x1p-52") + off[rm as usize]));
     if __builtin_expect(ady0 < hf64!("0x1p-75") || ady1 < hf64!("0x1p-75"), false) {
         y2 = y1 * y1;
-        y2l = unsafe { intrinsics::fmaf64(y1, y1, -y2) };
+        y2l = __builtin_fma(y1, y1, -y2);
         y3 = y2 * y1;
-        y3l = unsafe { intrinsics::fmaf64(y1, y2, -y3) } + y1 * y2l;
+        y3l = __builtin_fma(y1, y2, -y3) + y1 * y2l;
         h = ((y3 - zz) + y3l) * rr;
         dy = h * (y1 * u0);
         y = y1 - dy;
