@@ -21,7 +21,7 @@
  * Return cube root of x
  */
 
-#![allow(unused)]
+// #![allow(unused)]
 
 use core::{f64, intrinsics};
 
@@ -51,14 +51,14 @@ fn __builtin_copysign(x: f64, y: f64) -> f64 {
 
 type FExcept = u32;
 
-fn get_rounding_mode(flag: &mut FExcept) -> i32 {
+fn get_rounding_mode(_flag: &mut FExcept) -> i32 {
     // Always nearest
     0
 }
 
 fn set_flags(_flag: &FExcept) {}
 
-pub fn cr_cbrt(x: f64) -> f64 {
+fn cr_cbrt(x: f64) -> f64 {
     const ESCALE: [f64; 3] = [
         1.0,
         hf64("0x1.428a2f98d728bp+0"), /* 2^(1/3) */
@@ -112,7 +112,7 @@ pub fn cr_cbrt(x: f64) -> f64 {
     }
 
     e += 3072;
-    let mut cvt1: u64 = 0x3ffu64 << 52;
+    let cvt1: u64 = mant | (0x3ffu64 << 52);
     let mut cvt5: u64 = cvt1;
 
     let et: u32 = e / 3;
@@ -181,20 +181,20 @@ pub fn cr_cbrt(x: f64) -> f64 {
         ady = __builtin_fabs(dy);
         ady0 = __builtin_fabs(ady - off[rm as usize]);
         ady1 = __builtin_fabs(ady - (hf64("0x1p-52") + off[rm as usize]));
-        if (__builtin_expect(ady0 < hf64("0x1p-98") || ady1 < hf64("0x1p-98"), false)) {
+        if __builtin_expect(ady0 < hf64("0x1p-98") || ady1 < hf64("0x1p-98"), false) {
             let azz: f64 = __builtin_fabs(zz);
 
             // ~ 0x1.79d15d0e8d59b80000000000000ffc3dp+0
-            if (azz == hf64("0x1.9b78223aa307cp+1")) {
+            if azz == hf64("0x1.9b78223aa307cp+1") {
                 y1 = __builtin_copysign(hf64("0x1.79d15d0e8d59cp+0"), zz);
             }
 
             // ~ 0x1.de87aa837820e80000000000001c0f08p+0
-            if (azz == hf64("0x1.a202bfc89ddffp+2")) {
+            if azz == hf64("0x1.a202bfc89ddffp+2") {
                 y1 = __builtin_copysign(hf64("0x1.de87aa837820fp+0"), zz);
             }
 
-            if (rm > 0) {
+            if rm > 0 {
                 let wlist = [
                     (hf64("0x1.3a9ccd7f022dbp+0"), hf64("0x1.1236160ba9b93p+0}")), // ~ 0x1.1236160ba9b930000000000001e7e8fap+0
                     (hf64("0x1.7845d2faac6fep+0"), hf64("0x1.23115e657e49cp+0}")), // ~ 0x1.23115e657e49c0000000000001d7a799p+0
@@ -205,8 +205,8 @@ pub fn cr_cbrt(x: f64) -> f64 {
                     (hf64("0x1.ac8538a031cbdp+2"), hf64("0x1.e281d87098de8p+0}")), // ~ 0x1.e281d87098de80000000000000ee9314p+0
                 ];
                 for i in 0..7 {
-                    if (azz == wlist[i].0) {
-                        let tmp = if (rm as u64 + sign == 2) {
+                    if azz == wlist[i].0 {
+                        let tmp = if rm as u64 + sign == 2 {
                             hf64("0x1p-52")
                         } else {
                             0.0
@@ -222,11 +222,11 @@ pub fn cr_cbrt(x: f64) -> f64 {
     cvt3 += ((et - 342 - 1023) as u64) << 52;
     let m0: u64 = cvt3 << 30;
     let m1 = m0 >> 63;
-    if (__builtin_expect((m0 ^ m1) <= (1u64 << 30), false)) {
+    if __builtin_expect((m0 ^ m1) <= (1u64 << 30), false) {
         let mut cvt4: u64 = y1.to_bits();
         cvt4 = (cvt4 + (164 << 15)) & 0xffffffffffff0000u64;
-        if (__builtin_fabs((f64::from_bits(cvt4) - y1) - dy) < hf64("0x1p-60")
-            || __builtin_fabs(zz) == 1.0)
+        if __builtin_fabs((f64::from_bits(cvt4) - y1) - dy) < hf64("0x1p-60")
+            || __builtin_fabs(zz) == 1.0
         {
             cvt3 = (cvt3 + (1u64 << 15)) & 0xffffffffffff0000u64;
             set_flags(&flag);
