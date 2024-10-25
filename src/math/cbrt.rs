@@ -25,8 +25,6 @@
 
 use core::{f64, intrinsics};
 
-use super::hex_float::hf64;
-
 const B1: u32 = 715094163; /* B1 = (1023-1023/3-0.03306235651)*2**20 */
 const B2: u32 = 696219795; /* B2 = (1023-1023/3-54/3-0.03306235651)*2**20 */
 
@@ -218,7 +216,7 @@ fn cr_cbrt(x: f64) -> f64 {
     }
 
     let mut cvt3: u64 = y1.to_bits();
-    cvt3 += ((et.wrapping_sub(342).wrapping_sub(1023)) as u64) << 52;
+    cvt3 = cvt3.wrapping_add(((et.wrapping_sub(342).wrapping_sub(1023)) as u64) << 52);
     let m0: u64 = cvt3 << 30;
     let m1 = m0 >> 63;
     if __builtin_expect((m0 ^ m1) <= (1u64 << 30), false) {
