@@ -85,6 +85,20 @@ macro_rules! llvm_intrinsically_optimized {
     };
 }
 
+#[allow(unused)]
+macro_rules! hf32 {
+    ($s:literal) => {
+        const { $crate::math::hex_float::hf32($s) }
+    };
+}
+
+#[allow(unused)]
+macro_rules! hf64 {
+    ($s:literal) => {
+        const { $crate::math::hex_float::hf64($s) }
+    };
+}
+
 // Public modules
 mod acos;
 mod acosf;
@@ -369,10 +383,7 @@ fn combine_words(hi: u32, lo: u32) -> f64 {
     f64::from_bits((hi as u64) << 32 | lo as u64)
 }
 
-#[allow(unused)]
-use hex_float::{hf32, hf64};
-
-mod hex_float {
+pub mod hex_float {
     pub const fn hf32(s: &str) -> f32 {
         f32::from_bits(parse_any(s, 32, 23) as u32)
     }
