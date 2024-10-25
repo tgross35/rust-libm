@@ -369,6 +369,7 @@ fn combine_words(hi: u32, lo: u32) -> f64 {
     f64::from_bits((hi as u64) << 32 | lo as u64)
 }
 
+#[allow(unused)]
 use hex_float::{hf32, hf64};
 
 mod hex_float {
