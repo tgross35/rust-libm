@@ -98,7 +98,6 @@ fn cr_cbrt(x: f64) -> f64 {
         /* 0, inf, nan: we return x + x instead of simply x,
         to that for x a signaling NaN, it correctly triggers
         the invalid exception. */
-        // if(e==0x7ff||ix==0) return x + x;
         if e == 0x7ff || ix == 0 {
             return x + x;
         }
@@ -219,7 +218,7 @@ fn cr_cbrt(x: f64) -> f64 {
     }
 
     let mut cvt3: u64 = y1.to_bits();
-    cvt3 += ((et - 342 - 1023) as u64) << 52;
+    cvt3 += ((et.wrapping_sub(342).wrapping_sub(1023)) as u64) << 52;
     let m0: u64 = cvt3 << 30;
     let m1 = m0 >> 63;
     if __builtin_expect((m0 ^ m1) <= (1u64 << 30), false) {
