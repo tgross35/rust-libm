@@ -1,3 +1,4 @@
+pub mod func;
 pub mod gen;
 #[cfg(feature = "test-multiprecision")]
 pub mod mpfloat;
@@ -5,6 +6,7 @@ mod num_traits;
 mod precision;
 mod test_traits;
 
+pub use func::{BaseName, Name};
 pub use num_traits::{Float, Hex, Int};
 pub use precision::{MaybeOverride, SpecialCase, multiprec_allowed_ulp, musl_allowed_ulp};
 pub use test_traits::{CheckBasis, CheckCtx, CheckOutput, GenerateInput, TupleCall};
