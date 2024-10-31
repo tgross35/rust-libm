@@ -12,4 +12,5 @@ bytemuck = { version = "1.19.0", features = ["derive"] }
 libm = { path = "../.." }
 libm-macros = { path = "../libm-macros" }
 libm-test = { path = "../libm-test" }
+rayon = "1.10.0"
 rend = { version = "0.5.2", features = ["bytemuck-1"] }

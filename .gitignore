@@ -6,4 +6,8 @@
 /target
 Cargo.lock
 musl/
-**.tar.gz
+
+# Paths related to serialized test data
+**.tar*
+bin-output
+
