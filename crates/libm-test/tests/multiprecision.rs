@@ -2,43 +2,47 @@
 
 #![cfg(feature = "test-multiprecision")]
 
-use libm_test::gen::random;
-use libm_test::mpfloat::{self, MpOp};
-use libm_test::{CheckBasis, CheckCtx, CheckOutput, TupleCall, multiprec_allowed_ulp};
+use libm_test::func::MathOp;
+use libm_test::gen::{CachedInput, random};
+use libm_test::mpfloat::MpOp;
+use libm_test::{
+    CheckBasis, CheckCtx, CheckOutput, GenerateInput, TupleCall, multiprec_allowed_ulp,
+};
 
 /// Implement a test against MPFR with random inputs.
 macro_rules! multiprec_rand_tests {
     (
         fn_name: $fn_name:ident,
-        CFn: $CFn:ty,
-        CArgs: $CArgs:ty,
-        CRet: $CRet:ty,
-        RustFn: $RustFn:ty,
-        RustArgs: $RustArgs:ty,
-        RustRet: $RustRet:ty,
         attrs: [$($meta:meta)*]
     ) => {
         paste::paste! {
             #[test]
             $(#[$meta])*
             fn [< multiprec_random_ $fn_name >]() {
-                type MpOpTy = mpfloat::$fn_name::Operation;
-
-                let fname = stringify!($fn_name);
-                let ulp = multiprec_allowed_ulp(fname);
-                let mut mp_vals = MpOpTy::new();
-                let ctx = CheckCtx::new(ulp, fname, CheckBasis::Mpfr);
-                let cases = random::get_test_cases::<$RustArgs>(&ctx);
-
-                for input in cases {
-                    let mp_res = mp_vals.run(input);
-                    let crate_res = input.call(libm::$fn_name as $RustFn);
-
-                    crate_res.validate(mp_res, input, &ctx).unwrap();
-                }
+                test_one::<libm_test::func::$fn_name::Func>();
             }
         }
     };
+}
+
+fn test_one<Func>()
+where
+    Func: MathOp + MpOp,
+    CachedInput: GenerateInput<Func::RustArgs>,
+{
+    let name = Func::NAME_STR;
+
+    let ulp = multiprec_allowed_ulp(name);
+    let mut mp_vals = Func::new_mp();
+    let ctx = CheckCtx::new(ulp, name, CheckBasis::Mpfr);
+    let cases = random::get_test_cases::<Func::RustArgs>(&ctx);
+
+    for input in cases {
+        let mp_res = Func::run(&mut mp_vals, input);
+        let crate_res = input.call(Func::LIBM_FN);
+
+        crate_res.validate(mp_res, input, &ctx).unwrap();
+    }
 }
 
 libm_macros::for_each_function! {
