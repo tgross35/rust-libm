@@ -1,0 +1,15 @@
+[package]
+name = "util"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["test-multiprecision"]
+test-multiprecision = ["libm-test/test-multiprecision"]
+
+[dependencies]
+bytemuck = { version = "1.19.0", features = ["derive"] }
+libm = { path = "../.." }
+libm-macros = { path = "../libm-macros" }
+libm-test = { path = "../libm-test" }
+rend = { version = "0.5.2", features = ["bytemuck-1"] }

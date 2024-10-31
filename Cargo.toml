@@ -42,6 +42,7 @@ members = [
   "crates/libm-macros",
   "crates/libm-test",
   "crates/musl-math-sys",
+  "crates/util",
 ]
 default-members = [
   ".",
