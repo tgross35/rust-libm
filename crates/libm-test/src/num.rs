@@ -118,25 +118,6 @@ pub trait FloatExt: Float {
         };
         Self::from_bits(next_bits)
     }
-
-    /// Return the number of steps between two floats, returning `None` if either input is NaN.
-    ///
-    /// This is the number of steps needed for `n_up` or `n_down` to step between values.
-    /// Infinities are treated the same.
-    fn ulp_between(self, other: Self) -> Option<Self::Int> {
-        if self.is_nan() || other.is_nan() {
-            return None;
-        }
-
-        let x_abs = self.abs().to_bits();
-        let y_abs = other.abs().to_bits();
-
-        if self.signum() == other.signum() {
-            Some(max(x_abs, y_abs) - min(x_abs, y_abs))
-        } else {
-            Some(x_abs + y_abs)
-        }
-    }
 }
 
 impl<F> FloatExt for F where F: Float {}
@@ -201,6 +182,25 @@ impl<F: FloatExt> Consts<F> {
     }
 }
 
+/// Return the number of steps between two floats, returning `None` if either input is NaN.
+///
+/// This is the number of steps needed for `n_up` or `n_down` to step between values.
+/// Infinities are treated the same. It does not matter which value is greater.
+fn ulp_between<F: Float>(x: F, y: F) -> Option<F::Int> {
+    if x.is_nan() || y.is_nan() {
+        return None;
+    }
+
+    let x_abs = x.abs().to_bits();
+    let y_abs = y.abs().to_bits();
+
+    if x.signum() == y.signum() {
+        Some(max(x_abs, y_abs) - min(x_abs, y_abs))
+    } else {
+        Some(x_abs + y_abs)
+    }
+}
+
 /// An iterator that returns floats with linearly spaced integer representations, which translates
 /// to logarithmic spacing of their values.
 ///
@@ -211,7 +211,7 @@ pub fn logspace<F: FloatExt>(start: F, end: F, steps: F::Int) -> impl Iterator<I
     assert!(end >= start);
 
     let mut steps = steps.checked_sub(F::Int::ONE).expect("`steps` must be at least 2");
-    let between = start.ulp_between(end).expect("`start` or `end` is NaN");
+    let between = ulp_between(start, end).expect("`start` or `end` is NaN");
     let spacing = (between / steps).max(F::Int::ONE);
     steps = steps.min(between); // At maximum, one step per ULP
 
@@ -365,7 +365,7 @@ mod tests {
     fn test_ulp_between() {
         for (i, x) in f8::ALL.into_iter().enumerate() {
             for (j, y) in f8::ALL.into_iter().enumerate() {
-                let ulp = x.ulp_between(y).unwrap();
+                let ulp = ulp_between(x, y).unwrap();
                 let make_msg = || format!("i: {i} j: {j} x: {x:b} y: {y:b} ulp {ulp}");
 
                 let i_low = min(i, j);
@@ -393,17 +393,17 @@ mod tests {
 
     #[test]
     fn test_ulp_between_inf_nan_zero() {
-        assert_eq!(f8::NEG_INFINITY.ulp_between(f8::INFINITY).unwrap(), f8::ALL_LEN as u8);
-        assert_eq!(f8::INFINITY.ulp_between(f8::NEG_INFINITY).unwrap(), f8::ALL_LEN as u8);
+        assert_eq!(ulp_between(f8::NEG_INFINITY, f8::INFINITY).unwrap(), f8::ALL_LEN as u8);
+        assert_eq!(ulp_between(f8::INFINITY, f8::NEG_INFINITY).unwrap(), f8::ALL_LEN as u8);
         assert_eq!(
-            f8::NEG_INFINITY.ulp_between(f8::ALL[f8::ALL_LEN - 1]).unwrap(),
+            ulp_between(f8::NEG_INFINITY, f8::ALL[f8::ALL_LEN - 1]).unwrap(),
             f8::ALL_LEN as u8 - 1
         );
-        assert_eq!(f8::INFINITY.ulp_between(f8::ALL[0]).unwrap(), f8::ALL_LEN as u8 - 1);
+        assert_eq!(ulp_between(f8::INFINITY, f8::ALL[0]).unwrap(), f8::ALL_LEN as u8 - 1);
 
-        assert_eq!(f8::ZERO.ulp_between(f8::NEG_ZERO).unwrap(), 0);
-        assert_eq!(f8::NAN.ulp_between(f8::ZERO), None);
-        assert_eq!(f8::ZERO.ulp_between(f8::NAN), None);
+        assert_eq!(ulp_between(f8::ZERO, f8::NEG_ZERO).unwrap(), 0);
+        assert_eq!(ulp_between(f8::NAN, f8::ZERO), None);
+        assert_eq!(ulp_between(f8::ZERO, f8::NAN), None);
     }
 
     #[test]
