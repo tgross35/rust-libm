@@ -101,11 +101,8 @@ where
     // And then we need to be able to cast integers (required by `Domain`).
     <Op::FTy as Float>::Int: TryFrom<usize>,
 {
-    let name = Op::NAME_STR;
-
-    let ulp = multiprec_allowed_ulp(name);
     let mut mp_vals = Op::new_mp();
-    let ctx = CheckCtx::new(ulp, name, CheckBasis::Mpfr);
+    let ctx = CheckCtx::new(Op::IDENTIFIER, CheckBasis::Mpfr);
     let cases = domain::get_test_cases::<Op>();
 
     for input in cases {
