@@ -253,8 +253,7 @@ mod tests {
 
     #[test]
     fn test_n_up_down() {
-        for i in 0..f8::ALL_LEN {
-            let v = f8::ALL[i];
+        for (i, v) in f8::ALL.into_iter().enumerate() {
 
             for n in 0..f8::ALL_LEN {
                 let down = v.n_down(n as u8).to_bits();
