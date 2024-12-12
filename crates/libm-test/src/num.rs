@@ -6,12 +6,15 @@ use libm::support::{CastInto, Float};
 
 use crate::{Int, MinInt};
 
-impl<F> FloatExt for F where F: Float {}
-
-/// Additional float methods that build on the `libm` `Float` trait.
+/// Extension to `libm`'s `Float` trait with methods that are useful for tests but not
+/// needed in `libm` itself.
 pub trait FloatExt: Float {
     /// The minimum subnormal number.
     const TINY_BITS: Self::Int = Self::Int::ONE;
+
+    fn consts() -> Consts<Self> {
+        Consts::new()
+    }
 
     /// Increment by one ULP, saturating at infinity.
     fn next_up(self) -> Self {
@@ -133,6 +136,68 @@ pub trait FloatExt: Float {
         } else {
             Some(x_abs + y_abs)
         }
+    }
+}
+
+impl<F> FloatExt for F where F: Float {}
+
+/// Extra constants that are useful for tests.
+#[derive(Debug, Clone, Copy)]
+pub struct Consts<F> {
+    /// The default quiet NaN, which is also the minimum quiet NaN.
+    pub pos_nan: F,
+    /// The default quiet NaN with negative sign.
+    pub neg_nan: F,
+    /// NaN with maximum (unsigned) significand to be a quiet NaN. The significand is saturated.
+    pub max_qnan: F,
+    /// NaN with minimum (unsigned) significand to be a signaling NaN.
+    pub min_snan: F,
+    /// NaN with maximum (unsigned) significand to be a signaling NaN.
+    pub max_snan: F,
+    pub neg_max_qnan: F,
+    pub neg_min_snan: F,
+    pub neg_max_snan: F,
+}
+
+impl<F: FloatExt> Consts<F> {
+    fn new() -> Self {
+        let top_sigbit_mask = F::Int::ONE << (F::SIG_BITS - 1);
+        let pos_nan = F::EXP_MASK | top_sigbit_mask;
+        let max_qnan = F::EXP_MASK | F::SIG_MASK;
+        let min_snan = F::EXP_MASK | F::Int::ONE;
+        let max_snan = (F::EXP_MASK | F::SIG_MASK) ^ top_sigbit_mask;
+
+        let neg_nan = pos_nan | F::SIGN_MASK;
+        let neg_max_qnan = max_qnan | F::SIGN_MASK;
+        let neg_min_snan = min_snan | F::SIGN_MASK;
+        let neg_max_snan = max_snan | F::SIGN_MASK;
+
+        Self {
+            pos_nan: F::from_bits(pos_nan),
+            neg_nan: F::from_bits(neg_nan),
+            max_qnan: F::from_bits(max_qnan),
+            min_snan: F::from_bits(min_snan),
+            max_snan: F::from_bits(max_snan),
+            neg_max_qnan: F::from_bits(neg_max_qnan),
+            neg_min_snan: F::from_bits(neg_min_snan),
+            neg_max_snan: F::from_bits(neg_max_snan),
+        }
+    }
+
+    pub fn iter(self) -> impl Iterator<Item = F> {
+        let Self {
+            pos_nan,
+            neg_nan,
+            max_qnan,
+            min_snan,
+            max_snan,
+            neg_max_qnan,
+            neg_min_snan,
+            neg_max_snan,
+        } = self;
+
+        [pos_nan, neg_nan, max_qnan, min_snan, max_snan, neg_max_qnan, neg_min_snan, neg_max_snan]
+            .into_iter()
     }
 }
 
@@ -350,5 +415,28 @@ mod tests {
         let ls: Vec<_> = logspace(f8::from_bits(0x0), f8::from_bits(0x3), 10).collect();
         let exp = [f8::from_bits(0x0), f8::from_bits(0x1), f8::from_bits(0x2), f8::from_bits(0x3)];
         assert_eq!(ls, exp);
+    }
+
+    #[test]
+    fn test_consts() {
+        let Consts {
+            pos_nan,
+            neg_nan,
+            max_qnan,
+            min_snan,
+            max_snan,
+            neg_max_qnan,
+            neg_min_snan,
+            neg_max_snan,
+        } = f8::consts();
+
+        assert_eq!(pos_nan.to_bits(), 0b0_1111_100);
+        assert_eq!(neg_nan.to_bits(), 0b1_1111_100);
+        assert_eq!(max_qnan.to_bits(), 0b0_1111_111);
+        assert_eq!(min_snan.to_bits(), 0b0_1111_001);
+        assert_eq!(max_snan.to_bits(), 0b0_1111_011);
+        assert_eq!(neg_max_qnan.to_bits(), 0b1_1111_111);
+        assert_eq!(neg_min_snan.to_bits(), 0b1_1111_001);
+        assert_eq!(neg_max_snan.to_bits(), 0b1_1111_011);
     }
 }

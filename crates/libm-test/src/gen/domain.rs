@@ -80,11 +80,7 @@ where
 fn near_bounds<F: Float, D: Domain<F>>() -> Vec<F> {
     let mut values = Vec::new();
 
-    let lower = D::DEFINED.0;
-    let upper = D::DEFINED.1;
-    let one = F::ONE;
-    let two = one + one;
-    let three = two + one;
+    let (lower, upper) = D::DEFINED;
 
     if let (Bound::Included(l) | Bound::Excluded(l), Bound::Included(u) | Bound::Excluded(u)) =
         (lower, upper)
@@ -126,6 +122,7 @@ fn near_bounds<F: Float, D: Domain<F>>() -> Vec<F> {
     values.push(F::INFINITY);
     values.push(F::NEG_INFINITY);
     values.push(F::NEG_ZERO);
+    values.extend(F::consts().iter());
 
     // Check around asymptotest
     for (from, _to) in D::defined_asymptotes().take(MAX_ASYMPTOTES) {
