@@ -17,9 +17,6 @@ where
     /// The region for which the function is defined. Ignores poles.
     const DEFINED: (Bound<T>, Bound<T>);
 
-    /// The region, if any, for which the function repeats. Used to test within.
-    const PERIODIC: Option<(Bound<T>, Bound<T>)> = None;
-
     /// Asymptotes that have a defined value in the float function (but probably not the
     /// mathematical function). Returns an `(input, ouptut)` mapping.
     fn defined_asymptotes() -> impl Iterator<Item = (T, T)> {
@@ -35,32 +32,6 @@ where
     /// How NaNs at certain values should be handled.
     fn nan_handling(input: T) -> T {
         input
-    }
-
-    /// Helper to get the length of the period in unit `T`.
-    fn period() -> Option<T> {
-        Self::PERIODIC?;
-        let start = Self::period_start();
-        let end = Self::period_end();
-        if start > end { Some(start - end) } else { Some(end - start) }
-    }
-
-    /// Helper to get the start of the period. Panics if not period or a bad bound.
-    fn period_start() -> T {
-        let start = Self::PERIODIC.unwrap().0;
-        let (Bound::Included(start) | Bound::Excluded(start)) = start else {
-            panic!("`Unbounded` in period {:?}", Self::PERIODIC);
-        };
-        start
-    }
-
-    /// Helper to get the end of the period. Panics if not period or a bad bound.
-    fn period_end() -> T {
-        let end = Self::PERIODIC.unwrap().1;
-        let (Bound::Included(end) | Bound::Excluded(end)) = end else {
-            panic!("`Unbounded` in period {:?}", Self::PERIODIC);
-        };
-        end
     }
 }
 
@@ -98,9 +69,6 @@ impl<F: Float> Domain<F> for ATanhDomain {
 pub struct TrigDomain;
 impl<F: Float> Domain<F> for TrigDomain {
     const DEFINED: (Bound<F>, Bound<F>) = unbounded();
-
-    const PERIODIC: Option<(Bound<F>, Bound<F>)> =
-        Some((Bound::Excluded(F::NEG_PI), Bound::Included(F::PI)));
 
     fn check_points() -> impl Iterator<Item = F> {
         [-F::PI, -F::FRAC_PI_2, F::FRAC_PI_2, F::PI].into_iter()

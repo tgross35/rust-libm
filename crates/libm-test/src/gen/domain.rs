@@ -8,7 +8,6 @@
 //!   NaNs?)
 //! - Check near zero if defined
 //! - If unbounded, ensure that real inputs do not produce any NaNs
-//! - If periodic, check that results are identical for a few periods (?)
 
 use std::iter;
 use std::ops::Bound;
@@ -57,9 +56,9 @@ pub fn get_test_cases_for_domain<F: Float, D: Domain<F>>() -> impl Iterator<Item
 where
     F::Int: TryFrom<usize>,
 {
-    // We generate logspaced inputs within a specific range. Use the function domain
-    // by default but if the function is periodic, check only within that period.
-    let (start, end) = D::PERIODIC.unwrap_or(D::DEFINED);
+    // We generate logspaced inputs within a specific range, excluding values that are out of
+    // range in order to make iterations useful (random tests still cover the full range).
+    let (start, end) = D::DEFINED;
     let range_start = match start {
         Bound::Included(v) => v,
         Bound::Excluded(v) => v.next_up(),
@@ -127,26 +126,6 @@ fn near_bounds<F: Float, D: Domain<F>>() -> Vec<F> {
     values.push(F::INFINITY);
     values.push(F::NEG_INFINITY);
     values.push(F::NEG_ZERO);
-
-    // Check period endpoints (as we define them) if available
-    if let Some((start, end)) = D::PERIODIC {
-        validate_bound(start);
-        validate_bound(end);
-
-        around_bound(start, &mut values);
-        around_bound(end, &mut values);
-
-        let p = D::period().unwrap();
-
-        // Check the same points for a few period to make sure there is no drift
-        for mul in [one / two, one, three / two, two, three] {
-            let back = D::period_start() - mul * p;
-            let forward = D::period_end() + mul * p;
-
-            around(back, &mut values);
-            around(forward, &mut values);
-        }
-    }
 
     // Check around asymptotest
     for (from, _to) in D::defined_asymptotes().take(MAX_ASYMPTOTES) {
