@@ -450,9 +450,7 @@ impl cmp::PartialOrd for f8 {
             Some(res)
         } else {
             // Otherwise, both are negative, so we need to flip the sense of the
-            // comparison to get the correct result.  (This assumes a twos- or ones-
-            // complement integer representation; if integers are represented in a
-            // sign-magnitude representation, then this flip is incorrect).
+            // comparison to get the correct result.
             Some(res.reverse())
         }
     }
