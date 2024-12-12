@@ -10,7 +10,7 @@ use std::process::Command;
 use std::{env, fs};
 
 use libm_test::domain::{Domain, SqrtDomain, TrigDomain, Unbounded};
-use libm_test::gen::domain;
+use libm_test::gen::domain_logspace;
 
 const JL_PLOT: &str = "examples/plot_file.jl";
 
@@ -46,7 +46,7 @@ fn plot_one<D: Domain<f32>>(out_dir: &Path, name: &str, j_args: &mut Vec<String>
         let f = fs::File::create(&text_file).unwrap();
         let mut w = BufWriter::new(f);
 
-        for input in domain::get_test_cases_for_domain::<f32, D>() {
+        for input in domain_logspace::get_test_cases_inner::<f32, D>() {
             writeln!(w, "{:e}", input.0).unwrap();
         }
         w.flush().unwrap();

@@ -3,11 +3,11 @@
 #![cfg(feature = "test-multiprecision")]
 
 use libm_test::domain::HasDomain;
-use libm_test::gen::{CachedInput, domain, random};
+use libm_test::gen::{CachedInput, domain_logspace, edge_cases, random};
 use libm_test::mpfloat::MpOp;
 use libm_test::{CheckBasis, CheckCtx, CheckOutput, Float, GenerateInput, MathOp, TupleCall};
 
-/// Implement a test against MPFR with random inputs.
+/// Test against MPFR with random inputs.
 macro_rules! mp_rand_tests {
     (
         fn_name: $fn_name:ident,
@@ -70,8 +70,8 @@ libm_macros::for_each_function! {
     ],
 }
 
-/// Implement a test against MPFR with domain-aware inputs.
-macro_rules! multiprec_domain_tests {
+/// Test against MPFR with generators from a domain.
+macro_rules! mp_domain_tests {
     (
         fn_name: $fn_name:ident,
         attrs: [$($meta:meta)*]
@@ -79,15 +79,23 @@ macro_rules! multiprec_domain_tests {
         paste::paste! {
             #[test]
             $(#[$meta])*
-            fn [< multiprec_domain_ $fn_name >]() {
-                test_one_domain::<libm_test::op::$fn_name::Routine>();
+            fn [< mp_edge_case_ $fn_name >]() {
+                type Op = libm_test::op::$fn_name::Routine;
+                domain_test_runner::<Op>(edge_cases::get_test_cases::<Op>());
+            }
+
+            #[test]
+            $(#[$meta])*
+            fn [< mp_logspace_ $fn_name >]() {
+                type Op = libm_test::op::$fn_name::Routine;
+                domain_test_runner::<Op>(domain_logspace::get_test_cases::<Op>());
             }
         }
     };
 }
 
-/// Test a single routine against domaine-aware inputs
-fn test_one_domain<Op>()
+/// Test a single routine against domaine-aware inputs.
+fn domain_test_runner<Op>(cases: impl Iterator<Item = (Op::FTy,)>)
 where
     // Complicated generics...
     // The operation must take a single float argument (unary only)
@@ -103,7 +111,6 @@ where
 {
     let mut mp_vals = Op::new_mp();
     let ctx = CheckCtx::new(Op::IDENTIFIER, CheckBasis::Mpfr);
-    let cases = domain::get_test_cases::<Op>();
 
     for input in cases {
         let mp_res = Op::run(&mut mp_vals, input);
@@ -114,9 +121,10 @@ where
 }
 
 libm_macros::for_each_function! {
-    callback: multiprec_domain_tests,
+    callback: mp_domain_tests,
     attributes: [],
     skip: [
+        // All functions with more than one input must be disabled
         atan2f,
         copysignf,
         fdimf,
