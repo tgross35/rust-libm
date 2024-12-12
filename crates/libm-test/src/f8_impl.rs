@@ -78,7 +78,7 @@ impl Float for f8 {
 impl f8 {
     pub const ALL_LEN: usize = 240;
 
-    /// All non-infinite non-NaN values of `f8` excluding `-0`.
+    /// All non-infinite non-NaN values of `f8`
     pub const ALL: [Self; Self::ALL_LEN] = [
         // -m*2^7
         Self(0b1_1110_111), // -240
