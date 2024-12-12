@@ -10,7 +10,7 @@ use crate::{FloatExt, MathOp};
 const AROUND: usize = 100;
 
 /// Some functions have infinite asymptotes, limit how many we check.
-const MAX_ASYMPTOTES: usize = 10;
+const MAX_CHECK_POINTS: usize = 10;
 
 /// Create a test case iterator.
 pub fn get_test_cases<Op>() -> impl Iterator<Item = (Op::FTy,)>
@@ -19,14 +19,13 @@ where
 {
     // Create a vector full of values near interesting (bounds, asymptotes, etc).
     let mut values = Vec::new();
-    generate_near_limits::<Op::FTy>(&mut values);
-    generate_near_asymptotes::<Op::FTy, Op::D>(&mut values);
+    populate_values::<Op::FTy, Op::D>(&mut values);
     values.sort_by_key(|x| x.to_bits());
     values.dedup_by_key(|x| x.to_bits());
     values.into_iter().map(|v| (v,))
 }
 
-fn generate_near_limits<F: Float>(values: &mut Vec<F>) {
+fn populate_values<F: Float, D: Domain<F>>(values: &mut Vec<F>) {
     values.push(F::MIN);
     values.push(F::MAX);
 
@@ -47,16 +46,9 @@ fn generate_near_limits<F: Float>(values: &mut Vec<F>) {
     count_down(F::ONE, values);
     count_down(F::ZERO, values);
     count_down(F::NEG_ONE, values);
-}
 
-fn generate_near_asymptotes<F: Float, D: Domain<F>>(values: &mut Vec<F>) {
     // Check around asymptotest
-    for (from, _to) in D::defined_asymptotes().take(MAX_ASYMPTOTES) {
-        count_up(from, values);
-        count_down(from, values);
-    }
-
-    for x in D::check_points().take(MAX_ASYMPTOTES) {
+    for x in D::check_points().take(MAX_CHECK_POINTS) {
         count_up(x, values);
         count_down(x, values);
     }

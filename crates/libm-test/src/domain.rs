@@ -17,21 +17,12 @@ where
     /// The region for which the function is defined. Ignores poles.
     const DEFINED: (Bound<T>, Bound<T>);
 
-    /// Asymptotes that have a defined value in the float function (but probably not the
-    /// mathematical function). Returns an `(input, ouptut)` mapping.
-    fn defined_asymptotes() -> impl Iterator<Item = (T, T)> {
-        std::iter::empty()
-    }
-
     /// Additional points to check closer around. These can be e.g. undefined asymptotes or
     /// inflection points.
+    ///
+    /// -inf, -1, 0, 1, and inf always get checked so may be excluded.
     fn check_points() -> impl Iterator<Item = T> {
         std::iter::empty()
-    }
-
-    /// How NaNs at certain values should be handled.
-    fn nan_handling(input: T) -> T {
-        input
     }
 }
 
@@ -59,10 +50,6 @@ impl<F: Float> Domain<F> for ACoshDomain {
 pub struct ATanhDomain;
 impl<F: Float> Domain<F> for ATanhDomain {
     const DEFINED: (Bound<F>, Bound<F>) = (Bound::Excluded(F::NEG_ONE), Bound::Excluded(F::ONE));
-
-    fn defined_asymptotes() -> impl Iterator<Item = (F, F)> {
-        [(F::NEG_ONE, F::NEG_INFINITY), (F::ONE, F::NEG_INFINITY)].into_iter()
-    }
 }
 
 /// Domain for `sin`, `cos`, and `tan`
@@ -79,20 +66,12 @@ impl<F: Float> Domain<F> for TrigDomain {
 pub struct LogDomain;
 impl<F: Float> Domain<F> for LogDomain {
     const DEFINED: (Bound<F>, Bound<F>) = strictly_positive();
-
-    fn defined_asymptotes() -> impl Iterator<Item = (F, F)> {
-        [(F::ZERO, F::NEG_INFINITY)].into_iter()
-    }
 }
 
 /// Domain for `log1p` i.e. `log(1 + x)`
 pub struct Log1pDomain;
 impl<F: Float> Domain<F> for Log1pDomain {
     const DEFINED: (Bound<F>, Bound<F>) = (Bound::Excluded(F::NEG_ONE), Bound::Unbounded);
-
-    fn defined_asymptotes() -> impl Iterator<Item = (F, F)> {
-        [(F::NEG_ONE, F::NEG_INFINITY)].into_iter()
-    }
 }
 
 /// Domain for `sqrt`
