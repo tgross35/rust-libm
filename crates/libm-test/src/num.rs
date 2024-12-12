@@ -302,10 +302,8 @@ mod tests {
 
     #[test]
     fn test_ulp_between() {
-        for i in 0..f8::ALL_LEN {
-            for j in 0..f8::ALL_LEN {
-                let x = f8::ALL[i];
-                let y = f8::ALL[j];
+        for (i, x) in f8::ALL.into_iter().enumerate() {
+            for (j, y) in f8::ALL.into_iter().enumerate() {
                 let ulp = x.ulp_between(y).unwrap();
                 let make_msg = || format!("i: {i} j: {j} x: {x:b} y: {y:b} ulp {ulp}");
 
