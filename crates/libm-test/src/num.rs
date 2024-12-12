@@ -165,8 +165,7 @@ mod tests {
 
     #[test]
     fn test_next_up_down() {
-        for i in 0..f8::ALL_LEN {
-            let v = f8::ALL[i];
+        for (i, v) in f8::ALL.into_iter().enumerate() {
 
             let down = v.next_down().to_bits();
             let up = v.next_up().to_bits();
