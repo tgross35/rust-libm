@@ -211,7 +211,7 @@ pub fn logspace<F: FloatExt>(start: F, end: F, steps: F::Int) -> impl Iterator<I
     assert!(end >= start);
 
     let mut steps = steps.checked_sub(F::Int::ONE).expect("`steps` must be at least 2");
-    let between = start.ulp_between(end).expect("`start `must be less than `end`");
+    let between = start.ulp_between(end).expect("`start` or `end` is NaN");
     let spacing = (between / steps).max(F::Int::ONE);
     steps = steps.min(between); // At maximum, one step per ULP
 
