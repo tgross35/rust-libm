@@ -13,8 +13,6 @@ pub fn fabsf128(x: f128) -> f128 {
     super::generic::fabs(x)
 }
 
-// PowerPC tests are failing on LLVM 13: https://github.com/rust-lang/rust/issues/88520
-#[cfg(not(target_arch = "powerpc64"))]
 #[cfg(test)]
 mod tests {
     use super::*;
