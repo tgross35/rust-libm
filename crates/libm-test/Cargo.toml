@@ -18,13 +18,16 @@ build-mpfr = ["dep:az", "dep:rug", "dep:gmp-mpfr-sys"]
 build-musl = ["dep:musl-math-sys"]
 
 # Enable report generation without bringing in more dependencies by default
-benchmarking-reports = ["criterion/plotters", "criterion/html_reports"]
+benchmarking-reports = ["plots", "criterion/plotters", "criterion/html_reports"]
 
 # Enable icount benchmarks (requires iai-callgrind and valgrind)
 icount = ["dep:iai-callgrind"]
 
 # Run with a reduced set of benchmarks, such as for CI
 short-benchmarks = []
+
+# Dependencies needed for generating plots
+plots = ["dep:plotters"]
 
 [dependencies]
 anyhow = "1.0.90"
@@ -36,6 +39,7 @@ libm = { path = "../..", features = ["unstable-public-internals"] }
 libm-macros = { path = "../libm-macros" }
 musl-math-sys = { path = "../musl-math-sys", optional = true }
 paste = "1.0.15"
+plotters = { version = "0.3.7", default-features = false, optional = true, features = ["line_series", "svg_backend"] }
 rand = "0.8.5"
 rand_chacha = "0.3.1"
 rayon = "1.10.0"
@@ -66,6 +70,10 @@ harness = false
 # `z` so these tests get run last.
 name = "z_extensive"
 harness = false
+
+[[example]]
+name = "plots"
+required-features = ["plots"]
 
 [lints.rust]
 # Values from the chared config.rs used by `libm` but not the test crate
