@@ -21,40 +21,80 @@ function main()
 
     pi2ticks = pi_ticks(2)
     pi4ticks = pi_ticks(4)
+    # Sometimes we don't get enough ticks by default, so we adjust to 
+    ticks6 = LinearTicks(6)
+    ticks8 = LinearTicks(8)
+    ticks10 = LinearTicks(10)
+    ticks1 = -10:1:10
+    ticks0p5 = -10:0.5:10
+    # ticks1 = MultiplesTicks(7, 1, "")
+    # ticks0p5 = MultiplesTicks(7, 0.5, "")
 
     plot_unary(out_dir, sin, (-2pi, 2pi), (-1.2, 1.2), xticks = pi2ticks)
     plot_unary(out_dir, cos, (-2pi, 2pi), (-1.2, 1.2), xticks = pi2ticks)
     plot_unary(out_dir, tan, (-2pi, 2pi), (-4.0, 4.0), xticks = pi2ticks)
 
-    plot_unary(out_dir, asin, (-1.5, 1.5), (-pi / 2 - 0.2, pi / 2 + 0.2), yticks = pi4ticks)
-    plot_unary(out_dir, acos, (-1.5, 1.5), (-0.2, pi + 0.2), yticks = pi4ticks)
+    plot_unary(
+        out_dir,
+        asin,
+        (-1.5, 1.5),
+        (-pi / 2 - 0.2, pi / 2 + 0.2),
+        title = L"\arcsin(x)",
+        xmin = -1.0,
+        xmax = 1.0,
+        yticks = pi4ticks,
+    )
+    plot_unary(
+        out_dir,
+        acos,
+        (-1.5, 1.5),
+        (-0.2, pi + 0.2),
+        title = L"\arccos(x)",
+        xmin = -1.0,
+        xmax = 1.0,
+        yticks = pi4ticks,
+    )
     plot_unary(
         out_dir,
         atan,
-        (-5.0, 5.0),
+        (-4.5, 4.5),
         (-pi / 2 - 0.2, pi / 2 + 0.2),
-        xticks = LinearTicks(4), # default only produces two ticks
+        title = L"\arctan(x)",
+        xticks = ticks10,
         yticks = pi4ticks,
     )
 
     plot_unary(out_dir, sinh, (-4.0, 4.0), (-8.0, 8.0))
-    plot_unary(out_dir, cosh, (-4.0, 4.0), (-0.5, 5.5))
+    plot_unary(out_dir, cosh, (-4.0, 4.0), (-0.5, 5.5), xticks = ticks0p5, yticks = ticks1)
     plot_unary(out_dir, tanh, (-4.0, 4.0), (-1.2, 1.2))
 
-    plot_unary(out_dir, asinh, (-8.0, 8.0), (-3.0, 3.0))
-    plot_unary(out_dir, acosh, (-0.2, 6.0), (-0.2, 3.0))
-    # TODO asymptotes clipped
-    plot_unary(out_dir, atanh, (-1.5, 1.5), (-4.0, 4.0))
+    plot_unary(out_dir, asinh, (-8.0, 8.0), (-3.0, 3.0), title = L"\text{arcsinh}(x)")
+    plot_unary(
+        out_dir,
+        acosh,
+        (-0.2, 6.0),
+        (-0.2, 3.0),
+        title = L"\text{arccosh}(x)",
+        xmin = 1.0,
+    )
+    plot_unary(
+        out_dir,
+        atanh,
+        (-1.5, 1.5),
+        (-4.0, 4.0),
+        yticks = ticks1,
+        title = L"\text{arctanh}(x)",
+    )
 
 
-    plot_unary(out_dir, abs, (-5.0, 5.0), (-0.2, 5.2), name = "fabs")
-    plot_unary(out_dir, ceil, (-4.0, 4.0), (-4.0, 4.0))
-    plot_unary(out_dir, floor, (-4.0, 4.0), (-4.0, 4.0))
-    plot_unary(out_dir, trunc, (-4.0, 4.0), (-4.0, 4.0))
+    plot_unary(out_dir, abs, (-3.0, 3.0), (-0.2, 3.2), name = "fabs")
+    plot_unary(out_dir, ceil, (-3.0, 3.0), (-4.0, 4.0))
+    plot_unary(out_dir, floor, (-3.0, 3.0), (-4.0, 4.0))
+    plot_unary(out_dir, trunc, (-3.0, 3.0), (-4.0, 4.0))
     # plot_unary(out_dir, rint, (-5.0, 5.0), (-1.2, 1.2))
     # plot_unary(out_dir, round, (-5.0, 5.0), (-1.2, 1.2))
 
-    plot_unary(out_dir, sqrt, (-0.2, 6.0), (-0.2, 3.0))
+    plot_unary(out_dir, sqrt, (-0.2, 6.0), (-0.2, 3.0), xmin = 0.0)
     plot_unary(out_dir, cbrt, (-6.0, 6.0), (-2.0, 2.0))
 
     plot_unary(
@@ -67,8 +107,9 @@ function main()
             Series(exp2, L"2^x", Dict(:space => :relative)),
             Series(expm1, L"e^x-1", Dict(:space => :relative)),
         ],
-        (-4.0, 4.0),
-        (-1.2, 10.0),
+        (-3.5, 3.5),
+        (-1.2, 6.0),
+        xticks = ticks1,
         legend_position = :lt,
     )
 
@@ -82,19 +123,35 @@ function main()
             Series(log1p, L"\log(1 + x)"),
             Series(log2, L"\log_2(x)"),
         ],
-        (-1.2, 10.0),
-        (-2.5, 4.0),
+        (-1.2, 6.0),
+        (-2.5, 3.0),
+        xticks = ticks1,
+        yticks = ticks1,
         legend_position = :rb,
     )
 
-    plot_unary(out_dir, erf, (-3.5, 3.5), (-1.2, 1.2), title = L"\text{erf} x")
-    plot_unary(out_dir, erfc, (-3.5, 3.5), (-0.2, 2.2), title = L"\text{erfc} x")
+    plot_unary(
+        out_dir,
+        erf,
+        (-3.5, 3.5),
+        (-1.2, 1.2),
+        xticks = ticks1,
+        title = L"\text{erf} x",
+    )
+    plot_unary(
+        out_dir,
+        erfc,
+        (-3.5, 3.5),
+        (-0.2, 2.2),
+        xticks = ticks1,
+        title = L"\text{erfc} x",
+    )
 
     plot_unary(
         out_dir,
         gamma,
-        (-5.0, 5.0),
-        (-5.0, 5.0),
+        (-4.0, 5.0),
+        (-4.0, 6.0),
         name = "tgamma",
         title = L"y = \Gamma(z)",
         xlabel = L"\Re(z)",
@@ -104,6 +161,7 @@ function main()
         lgamma,
         (0.0, 8.0),
         (-1.2, 8.0),
+        xticks = ticks1,
         title = L"y = \ln \Gamma(z)",
         xlabel = L"\Re(z)",
     )
@@ -155,17 +213,32 @@ function plot_unary(
     xlims::Tuple{Number,Number},
     ylims::Union{Tuple{Number,Number},Nothing} = nothing;
     legend_position::Union{Symbol,Nothing} = nothing,
+    # Set these if the function is discontinuous over `xlim`, e.g. sqrt. The
+    # plots show up better this way (lines actually reach their endpoints).
+    xmin::Union{Float64,Nothing} = nothing,
+    xmax::Union{Float64,Nothing} = nothing,
     kwargs...,
 )
     fig = Figure(font = texfont(), fontsize = 20)
     out_file = joinpath(out_dir, "$name.svg")
     println("plotting $name")
 
-    ax = Axis(fig[1, 1], title = title, limits = (xlims, ylims); kwargs...)
+    ax = Axis(
+        fig[1, 1],
+        title = title,
+        limits = (xlims, ylims);
+        xminorticksvisible = true,
+        xminorgridvisible = true,
+        yminorticksvisible = true,
+        yminorgridvisible = true,
+        kwargs...,
+    )
     vlines!(ax, 0, color = :black)
     hlines!(ax, 0, color = :black)
 
-    x = LinRange(xlims[1], xlims[2], 5000)
+    xmin = xmin === nothing ? xlims[1] : xmin
+    xmax = xmax === nothing ? xlims[2] : xmax
+    x = LinRange(xmin, xmax, 5000)
     for s in series
         y = @. to_nan(s.func, x)
         fix_discontinuities!(y)
