@@ -1,5 +1,6 @@
 use core::{fmt, mem, ops};
 
+use super::hex_float::parse_any_hex;
 use super::int_traits::{CastFrom, Int, MinInt};
 
 /// Trait for some basic operations on floats
@@ -152,6 +153,9 @@ pub trait Float:
     fn signum(self) -> Self {
         if self.is_nan() { self } else { Self::ONE.copysign(self) }
     }
+
+    /// Parse C's `0x1.abcdp-10` hex float syntax.
+    fn from_hex_str(s: &str) -> Self;
 }
 
 /// Access the associated `Int` type from a float (helper to avoid ambiguous associated types).
@@ -233,6 +237,10 @@ macro_rules! float_impl {
             fn normalize(significand: Self::Int) -> (i32, Self::Int) {
                 let shift = significand.leading_zeros().wrapping_sub(Self::EXP_BITS);
                 (1i32.wrapping_sub(shift as i32), significand << shift as Self::Int)
+            }
+
+            fn from_hex_str(s: &str) -> Self {
+                Self::from_bits(parse_any_hex(s, Self::BITS, Self::SIG_BITS) as $ity)
             }
         }
     };

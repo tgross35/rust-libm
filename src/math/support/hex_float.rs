@@ -7,26 +7,26 @@ use super::{f32_from_bits, f64_from_bits};
 /// Construct a 16-bit float from hex float representation (C-style)
 #[cfg(f16_enabled)]
 pub const fn hf16(s: &str) -> f16 {
-    f16::from_bits(parse_any(s, 16, 10) as u16)
+    f16::from_bits(parse_any_hex(s, 16, 10) as u16)
 }
 
 /// Construct a 32-bit float from hex float representation (C-style)
 pub const fn hf32(s: &str) -> f32 {
-    f32_from_bits(parse_any(s, 32, 23) as u32)
+    f32_from_bits(parse_any_hex(s, 32, 23) as u32)
 }
 
 /// Construct a 64-bit float from hex float representation (C-style)
 pub const fn hf64(s: &str) -> f64 {
-    f64_from_bits(parse_any(s, 64, 52) as u64)
+    f64_from_bits(parse_any_hex(s, 64, 52) as u64)
 }
 
 /// Construct a 128-bit float from hex float representation (C-style)
 #[cfg(f128_enabled)]
 pub const fn hf128(s: &str) -> f128 {
-    f128::from_bits(parse_any(s, 128, 112))
+    f128::from_bits(parse_any_hex(s, 128, 112))
 }
 
-const fn parse_any(s: &str, bits: u32, sig_bits: u32) -> u128 {
+pub const fn parse_any_hex(s: &str, bits: u32, sig_bits: u32) -> u128 {
     let exp_bits: u32 = bits - sig_bits - 1;
     let max_msb: i32 = (1 << (exp_bits - 1)) - 1;
     // The exponent of one ULP in the subnormals
