@@ -26,7 +26,25 @@ pub const fn hf128(s: &str) -> f128 {
     f128::from_bits(parse_any(s, 128, 112))
 }
 
-const fn parse_any(s: &str, bits: u32, sig_bits: u32) -> u128 {
+pub enum Error {
+    TooPrecise,
+    TooHuge,
+    TooTiny,
+    NoHexIndicator,
+}
+
+impl Error {
+    fn as_str(self) -> &'static str {
+        match self {
+            Self::TooPrecise => "the value is too precise",
+            Self::TooHuge => "the value is too huge",
+            Self::TooTiny => "the value is too tiny",
+            Self::NoHexIndicator => todo!(),
+        }
+    }
+}
+
+const fn parse_any(s: &str, bits: u32, sig_bits: u32) -> Result<u128, Error> {
     let exp_bits: u32 = bits - sig_bits - 1;
     let max_msb: i32 = (1 << (exp_bits - 1)) - 1;
     // The exponent of one ULP in the subnormals
@@ -35,7 +53,7 @@ const fn parse_any(s: &str, bits: u32, sig_bits: u32) -> u128 {
     let (neg, mut sig, exp) = parse_hex(s.as_bytes());
 
     if sig == 0 {
-        return (neg as u128) << (bits - 1);
+        return Ok((neg as u128) << (bits - 1));
     }
 
     // exponents of the least and most significant bits in the value
@@ -43,9 +61,17 @@ const fn parse_any(s: &str, bits: u32, sig_bits: u32) -> u128 {
     let msb = u128_ilog2(sig) as i32;
     let sig_bits = sig_bits as i32;
 
-    assert!(msb - lsb <= sig_bits, "the value is too precise");
-    assert!(msb + exp <= max_msb, "the value is too huge");
-    assert!(lsb + exp >= min_lsb, "the value is too tiny");
+    if msb - lsb > sig_bits {
+        return Err(Error::TooPrecise);
+    }
+
+    if msb + exp > max_msb {
+        return Err(Error::TooHuge);
+    }
+
+    if lsb + exp < min_lsb {
+        return Err(Error::TooTiny);
+    }
 
     // The parsed value is X = sig * 2^exp
     // Expressed as a multiple U of the smallest subnormal value:
@@ -73,7 +99,7 @@ const fn parse_any(s: &str, bits: u32, sig_bits: u32) -> u128 {
     sig += (uexp as u128) << sig_bits;
 
     // finally, set the sign bit if necessary
-    sig | ((neg as u128) << (bits - 1))
+    Ok(sig | ((neg as u128) << (bits - 1)))
 }
 
 /// Parse a hexadecimal float x
