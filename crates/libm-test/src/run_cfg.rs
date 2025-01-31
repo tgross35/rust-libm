@@ -5,7 +5,7 @@ use std::sync::LazyLock;
 use std::{env, str};
 
 use crate::gen::random::{SEED, SEED_ENV};
-use crate::{BaseName, FloatTy, Identifier, test_log};
+use crate::{BaseName, Float, FloatTy, Identifier, test_log};
 
 /// The environment variable indicating which extensive tests should be run.
 pub const EXTENSIVE_ENV: &str = "LIBM_EXTENSIVE_TESTS";
@@ -287,29 +287,65 @@ pub fn iteration_count(ctx: &CheckCtx, argnum: usize) -> u64 {
 }
 
 /// Some tests require that an integer be kept within reasonable limits; generate that here.
+// FIXME: this should probably be rolled into the integer domain somehow.
 pub fn int_range(ctx: &CheckCtx, argnum: usize) -> RangeInclusive<i32> {
     let t_env = TestEnv::from_env(ctx);
 
-    if !matches!(ctx.base_name, BaseName::Jn | BaseName::Yn) {
-        return i32::MIN..=i32::MAX;
-    }
+    match ctx.base_name {
+        BaseName::Ldexp | BaseName::Scalbn => {
+            assert_eq!(argnum, 1, "Expected integer as arg1 for `scalbn`/`ldexp`");
 
-    assert_eq!(argnum, 0, "For `jn`/`yn`, only the first argument takes an integer");
+            // FIXME: this should probably be integrated into `Domain` somehow, but we don't
+            // currently use domains for integer ranges.
 
-    // The integer argument to `jn` is an iteration count. Limit this to ensure tests can be
-    // completed in a reasonable amount of time.
-    let non_extensive_range = if t_env.slow_platform || !cfg!(optimizations_enabled) {
-        (-0xf)..=0xff
-    } else {
-        (-0xff)..=0xffff
-    };
+            let exp_bits = match ctx.fn_ident.math_op().float_ty {
+                // FIXME(f16_f128): once the types are always available, use the trait rather than
+                // hardcoding the value.
+                FloatTy::F16 => 5,
+                FloatTy::F32 => f32::EXP_BITS,
+                FloatTy::F64 => f64::EXP_BITS,
+                FloatTy::F128 => 15,
+            };
 
-    let extensive_range = (-0xfff)..=0xfffff;
+            // The largest possible `n` input to `scalbn`that does not saturate is
+            // `exp_max * 2 + sig_bits - 1`, which would be the scale from the minimum positive
+            // to maximum positive value. 
+            let reduced_max = F::EXP_MAX * 2 + F::SIG_BITS
 
-    match ctx.gen_kind {
-        GeneratorKind::Extensive => extensive_range,
-        GeneratorKind::QuickSpaced | GeneratorKind::Random => non_extensive_range,
-        GeneratorKind::EdgeCases => extensive_range,
+                1 << (exp_bits + 4);
+            let reduced_range = (-reduced_max)..=(reduced_max);
+
+            let full_range = i32::MIN..=i32::MAX;
+
+            match ctx.gen_kind {
+                // df
+                GeneratorKind::Extensive | GeneratorKind::QuickSpaced => reduced_range,
+                // oij
+                GeneratorKind::EdgeCases | GeneratorKind::Random => full_range,
+            }
+        }
+
+        BaseName::Jn | BaseName::Yn => {
+            assert_eq!(argnum, 0, "Expected integer as arg0 for `jn`/`yn`");
+
+            // The integer argument to `jn` is an iteration count. Limit this to ensure tests can be
+            // completed in a reasonable amount of time.
+            let non_extensive_range = if t_env.slow_platform || !cfg!(optimizations_enabled) {
+                (-0xf)..=0xff
+            } else {
+                (-0xff)..=0xffff
+            };
+
+            let extensive_range = (-0xfff)..=0xfffff;
+
+            match ctx.gen_kind {
+                GeneratorKind::Extensive => extensive_range,
+                GeneratorKind::QuickSpaced | GeneratorKind::Random => non_extensive_range,
+                GeneratorKind::EdgeCases => extensive_range,
+            }
+        }
+
+        _ => unreachable!("unrecognized function taking integer argument"),
     }
 }
 

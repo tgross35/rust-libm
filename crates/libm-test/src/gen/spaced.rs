@@ -29,7 +29,7 @@ where
     RangeInclusive<OpITy<Op>>: Iterator,
 {
     // i8 is a dummy type here, it can be any integer.
-    let domain = get_domain::<Op::FTy, i8>(ctx.fn_ident, argnum).unwrap_float();
+    let domain = get_domain::<Op::FTy>(ctx.fn_ident, argnum).unwrap_float();
     let start = domain.range_start();
     let end = domain.range_end();
 
