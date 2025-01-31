@@ -97,7 +97,7 @@ impl<I: Int> Domain<I> {
 }
 
 /// Multidimensional domains, represented as an array of 1-D domains.
-impl<F: Float, I: Int> EitherPrim<Domain<F>, Domain<I>> {
+impl<F: Float> EitherPrim<Domain<F>, Domain<i32>> {
     /// x ∈ ℝ
     const UNBOUNDED1: [Self; 1] =
         [Domain { start: Bound::Unbounded, end: Bound::Unbounded, check_points: None }
@@ -113,10 +113,6 @@ impl<F: Float, I: Int> EitherPrim<Domain<F>, Domain<I>> {
         Domain::UNBOUNDED.into_prim_float(),
         Domain::UNBOUNDED.into_prim_float(),
     ];
-
-    /// {x1, x2} ∈ ℝ, one float and one int
-    const UNBOUNDED_F_I: [Self; 2] =
-        [Domain::UNBOUNDED.into_prim_float(), Domain::UNBOUNDED_INT.into_prim_int()];
 
     /// x ∈ ℝ >= 0
     const POSITIVE: [Self; 1] = [Domain::POSITIVE.into_prim_float()];
@@ -164,6 +160,17 @@ impl<F: Float, I: Int> EitherPrim<Domain<F>, Domain<I>> {
     /// Domain for `sqrt`
     const SQRT: [Self; 1] = Self::POSITIVE;
 
+    /// x ∈ ℝ, integer has a restricted domain.
+    const SCALBN_LDEXP: [Self; 2] = [
+        Domain::UNBOUNDED.into_prim_float(),
+        Domain {
+            start: Bound::Included(-(1 << 18)),
+            end: Bound::Included(1 << 18),
+            check_points: None,
+        }
+        .into_prim_int(),
+    ];
+
     /// Domain for `gamma`
     const GAMMA: [Self; 1] = [Domain {
         check_points: Some(|| {
@@ -192,10 +199,7 @@ impl<F: Float, I: Int> EitherPrim<Domain<F>, Domain<I>> {
 }
 
 /// Get the domain for a given function.
-pub fn get_domain<F: Float, I: Int>(
-    id: Identifier,
-    argnum: usize,
-) -> EitherPrim<Domain<F>, Domain<I>> {
+pub fn get_domain<F: Float>(id: Identifier, argnum: usize) -> EitherPrim<Domain<F>, Domain<i32>> {
     let x = match id.base_name() {
         BaseName::Acos => &EitherPrim::INVERSE_TRIG_PERIODIC[..],
         BaseName::Acosh => &EitherPrim::ACOSH[..],
@@ -228,7 +232,7 @@ pub fn get_domain<F: Float, I: Int>(
         BaseName::J0 => &EitherPrim::UNBOUNDED1[..],
         BaseName::J1 => &EitherPrim::UNBOUNDED1[..],
         BaseName::Jn => &EitherPrim::BESSEL_N[..],
-        BaseName::Ldexp => &EitherPrim::UNBOUNDED_F_I[..],
+        BaseName::Ldexp => &EitherPrim::SCALBN_LDEXP[..],
         BaseName::Lgamma => &EitherPrim::LGAMMA[..],
         BaseName::LgammaR => &EitherPrim::LGAMMA[..],
         BaseName::Log => &EitherPrim::LOG[..],
@@ -242,7 +246,7 @@ pub fn get_domain<F: Float, I: Int>(
         BaseName::Remquo => &EitherPrim::UNBOUNDED2[..],
         BaseName::Rint => &EitherPrim::UNBOUNDED1[..],
         BaseName::Round => &EitherPrim::UNBOUNDED1[..],
-        BaseName::Scalbn => &EitherPrim::UNBOUNDED_F_I[..],
+        BaseName::Scalbn => &EitherPrim::SCALBN_LDEXP[..],
         BaseName::Sin => &EitherPrim::TRIG[..],
         BaseName::Sincos => &EitherPrim::TRIG[..],
         BaseName::Sinh => &EitherPrim::UNBOUNDED1[..],

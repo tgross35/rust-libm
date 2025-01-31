@@ -22,7 +22,7 @@ where
 {
     let mut ret = Vec::new();
     let values = &mut ret;
-    let domain = get_domain::<_, i8>(ctx.fn_ident, argnum).unwrap_float();
+    let domain = get_domain(ctx.fn_ident, argnum).unwrap_float();
     let domain_start = domain.range_start();
     let domain_end = domain.range_end();
 
