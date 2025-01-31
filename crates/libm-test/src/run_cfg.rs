@@ -298,29 +298,28 @@ pub fn int_range(ctx: &CheckCtx, argnum: usize) -> RangeInclusive<i32> {
             // FIXME: this should probably be integrated into `Domain` somehow, but we don't
             // currently use domains for integer ranges.
 
-            let exp_bits = match ctx.fn_ident.math_op().float_ty {
+            let (exp_bits, sig_bits) = match ctx.fn_ident.math_op().float_ty {
                 // FIXME(f16_f128): once the types are always available, use the trait rather than
                 // hardcoding the value.
-                FloatTy::F16 => 5,
-                FloatTy::F32 => f32::EXP_BITS,
-                FloatTy::F64 => f64::EXP_BITS,
-                FloatTy::F128 => 15,
+                FloatTy::F16 => (5, 10),
+                FloatTy::F32 => (f32::EXP_BITS, f32::SIG_BITS),
+                FloatTy::F64 => (f64::EXP_BITS, f64::SIG_BITS),
+                FloatTy::F128 => (15, 112),
             };
 
-            // The largest possible `n` input to `scalbn`that does not saturate is
-            // `exp_max * 2 + sig_bits - 1`, which would be the scale from the minimum positive
-            // to maximum positive value. 
-            let reduced_max = F::EXP_MAX * 2 + F::SIG_BITS
-
-                1 << (exp_bits + 4);
+            // The largest possible `n` input to `scalbn`that does not saturate is the range of the
+            // exponent (positive + negative) plus the additional subnormal range in the
+            // significand. Compute this and add a factor of 4 so we get values around there.
+            let reduced_max = ((1 << exp_bits) + sig_bits as i32) * 4;
             let reduced_range = (-reduced_max)..=(reduced_max);
 
             let full_range = i32::MIN..=i32::MAX;
 
             match ctx.gen_kind {
-                // df
+                // For tests where we need to make optimal use of iteration count, use the reduced
+                // range.
                 GeneratorKind::Extensive | GeneratorKind::QuickSpaced => reduced_range,
-                // oij
+                // Let random tests and edge cases cover any values not within the reduced range.
                 GeneratorKind::EdgeCases | GeneratorKind::Random => full_range,
             }
         }
