@@ -187,7 +187,7 @@ where
     FpResult::ok(F::from_bits(cvt3))
 }
 
-trait CbrtHelper: Float {
+pub trait CbrtHelper: Float {
     /// 2^(n / 3) for n = [0, 1, 2]
     const ESCALE: [Self; 3];
     /// The polynomial `c0+c1*x+c2*x^2+c3*x^3` approximates `x^(1/3)` on `[1,2]`
