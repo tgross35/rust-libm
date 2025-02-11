@@ -13,6 +13,19 @@ pub fn cbrt(x: f64) -> f64 {
     cbrt_round(x, Round::Nearest).val
 }
 
+// /// Compute the cube root of the argument.
+// #[cfg(f128_enabled)]
+// #[cfg_attr(all(test, assert_no_panic), no_panic::no_panic)]
+// pub fn cbrtf128(x: f128) -> f128 {
+//     cbrt_round(x, Round::Nearest).val
+// }
+
+/// Correctly rounded cube root.
+///
+/// Algorithm:
+/// - Minimax initial approximation
+/// - `F`-sized newton iteration
+/// - `2xF`-sized newton iteration
 pub fn cbrt_round<F: Float + CbrtHelper>(x: F, round: Round) -> FpResult<F>
 where
     F::Int: CastFrom<u64>,
@@ -25,7 +38,6 @@ where
     let u1: F = F::U1;
     let off = F::OFF;
 
-    /* rm=0 for rounding to nearest, and other values for directed roundings */
     let hx = x.to_bits();
     let mut mant: F::Int = hx & F::SIG_MASK;
     let sign: F::Int = hx & F::SIGN_MASK;
@@ -33,61 +45,60 @@ where
 
     let mut e: u32 = x.exp();
 
+    // Handle 0, infinity, NaN, and subnormals
     if ((e + 1) & F::EXP_SAT) < 2 {
         cold_path();
 
         let ix = hx & !F::SIGN_MASK;
 
-        /* 0, inf, nan: we return x + x instead of simply x,
-        to that for x a signaling NaN, it correctly triggers
-        the invalid exception. */
         if e == F::EXP_SAT || ix == zero {
+            // 0, infinity, NaN; use x + x to trigger exceptions
             return FpResult::ok(x + x);
         }
 
-        let nz = ix.leading_zeros() - 11; /* subnormal */
+        // Normalize subnormals
+        let nz = ix.leading_zeros() - F::EXP_BITS;
         mant <<= nz;
         mant &= F::SIG_MASK;
         e = e.wrapping_sub(nz - 1);
     }
 
     e = e.wrapping_add(3072);
-    let cvt1 = mant | (F::Int::cast_from(F::EXP_BIAS) << F::SIG_BITS);
-    let mut cvt5 = cvt1;
+    // Set the exponent to 0, z is now [1, 2)
+    let iz = mant | (F::Int::cast_from(F::EXP_BIAS) << F::SIG_BITS);
 
     let et: u32 = e / 3;
     let it: u32 = e % 3;
 
-    /* 2^(3k+it) <= x < 2^(3k+it+1), with 0 <= it <= 3 */
-    cvt5 += F::Int::cast_from(it) << F::SIG_BITS;
-    cvt5 |= sign;
-    let zz: F = F::from_bits(cvt5);
+    // 2^(3k+it) <= x < 2^(3k+it+1), with 0 <= it <= 3
+    // `zz` is `x` reduced to [1, 8)
+    let izz = (iz + (F::Int::cast_from(it) << F::SIG_BITS)) | sign;
+    let zz: F = F::from_bits(izz);
 
     /* cbrt(x) = cbrt(zz)*2^(et-1365) where 1 <= zz < 8 */
-    let mut isc = F::ESCALE[it as usize].to_bits(); // todo: index
-    isc |= sign;
-    let cvt2 = isc;
-    let z: F = F::from_bits(cvt1);
+    let isc = F::ESCALE[it as usize].to_bits() | sign;
+    let z: F = F::from_bits(iz);
 
     /* cbrt(zz) = cbrt(z)*isc, where isc encodes 1, 2^(1/3) or 2^(2/3),
     and 1 <= z < 2 */
     let r: F = F::ONE / z;
-    let rr: F = r * F::RSC[((it as usize) << 1) | neg as usize];
+    let rr: F = r * F::RSCALE[((it as usize) << 1) | neg as usize];
     let z2: F = z * z;
     let c0: F = F::C[0] + z * F::C[1];
     let c2: F = F::C[2] + z * F::C[3];
+
+    /* y is an approximation of z^(1/3) */
     let mut y: F = c0 + z2 * c2;
     let mut y2: F = y * y;
 
-    /* y is an approximation of z^(1/3) */
-    let mut h: F = y2 * (y * r) - F::ONE;
-
     /* h determines the error between y and z^(1/3) */
-    y -= (h * y) * (u0 - u1 * h);
+    let mut h: F = y2 * (y * r) - F::ONE;
 
     /* The correction y -= (h*y)*(u0 - u1*h) corresponds to a cubic variant
     of Newton's method, with the function f(y) = 1-z/y^3. */
-    y *= F::from_bits(cvt2);
+    y -= (h * y) * (u0 - u1 * h);
+
+    y *= F::from_bits(isc);
 
     /* Now y is an approximation of zz^(1/3),
      * and rr an approximation of 1/zz. We now perform another iteration of
@@ -194,7 +205,7 @@ pub trait CbrtHelper: Float {
     const C: [Self; 4];
     const U0: Self;
     const U1: Self;
-    const RSC: [Self; 6];
+    const RSCALE: [Self; 6];
     const OFF: [Self; 4];
     const WLIST: [(Self, Self); 7];
     const AZMAGIC1: Self;
@@ -212,17 +223,23 @@ impl CbrtHelper for f64 {
     ];
 
     const C: [Self; 4] = [
+        // hf64!("0x1.1b850259b99ddp-1"),
+        // hf64!("0x1.2b9762efeffecp-1"),
+        // hf64!("-0x1.4af8eb64ea1ecp-3"),
+        // hf64!("0x1.7590cccfad50bp-6"),
         hf64!("0x1.1b0babccfef9cp-1"),
         hf64!("0x1.2c9a3e94d1da5p-1"),
         hf64!("-0x1.4dc30b1a1ddbap-3"),
         hf64!("0x1.7a8d3e4ec9b07p-6"),
     ];
 
+    // 0.33333333...
     const U0: Self = hf64!("0x1.5555555555555p-2");
 
+    // 0.22222222...
     const U1: Self = hf64!("0x1.c71c71c71c71cp-3");
 
-    const RSC: [Self; 6] = [1.0, -1.0, 0.5, -0.5, 0.25, -0.25];
+    const RSCALE: [Self; 6] = [1.0, -1.0, 0.5, -0.5, 0.25, -0.25];
 
     const OFF: [Self; 4] = [hf64!("0x1p-53"), 0.0, 0.0, 0.0];
 
@@ -250,6 +267,51 @@ impl CbrtHelper for f64 {
         #[cfg(not(intrinsics_enabled))]
         {
             return super::fma(self, y, z);
+        }
+    }
+}
+
+#[cfg(f128_enabled)]
+impl CbrtHelper for f128 {
+    const ESCALE: [Self; 3] = [
+        1.0,
+        hf128!("0x1.428a2f98d728acf826cc8664b665p+0"), /* 2^(1/3) */
+        hf128!("0x1.965fea53d6e3c53be1ca3482bf3ap+0"), /* 2^(2/3) */
+    ];
+
+    const C: [Self; 4] = [
+        hf128!("0x1.1b850223b8bf644fcef50feeced1p-1"),
+        hf128!("0x1.2b97635e9e17d5240965cb56dc73p-1"),
+        hf128!("-0x1.4af8ec964bbc3767a6cf8ac456cbp-3"),
+        hf128!("0x1.7590ceecbb8c4c40d8c5e8b64d6bp-6"),
+    ];
+
+    const U0: Self = 0.3333333333333333333333333333333333333333;
+
+    const U1: Self = 0.2222222222222222222222222222222222222222;
+
+    const RSCALE: [Self; 6] = [1.0, -1.0, 0.5, -0.5, 0.25, -0.25];
+
+    const OFF: [Self; 4] = [hf128!("0x1p-53"), 0.0, 0.0, 0.0];
+
+    // Other rounding modes unsupported for f128
+    const WLIST: [(Self, Self); 7] =
+        [(0.0, 0.0), (0.0, 0.0), (0.0, 0.0), (0.0, 0.0), (0.0, 0.0), (0.0, 0.0), (0.0, 0.0)];
+
+    const AZMAGIC1: Self = hf128!("0x1.9b78223aa307cp+1");
+    const AZMAGIC2: Self = hf128!("0x1.79d15d0e8d59cp+0");
+    const AZMAGIC3: Self = hf128!("0x1.a202bfc89ddffp+2");
+    const AZMAGIC4: Self = hf128!("0x1.de87aa837820fp+0");
+
+    fn fma(self, y: Self, z: Self) -> Self {
+        #[cfg(intrinsics_enabled)]
+        {
+            return unsafe { core::intrinsics::fmaf128(self, y, z) };
+        }
+
+        #[cfg(not(intrinsics_enabled))]
+        {
+            return super::fmaf128(self, y, z);
         }
     }
 }
