@@ -23,13 +23,12 @@ where
     let one = F::Int::ONE;
     let u0: F = F::U0;
     let u1: F = F::U1;
-    let rsc = F::RSC;
     let off = F::OFF;
 
     /* rm=0 for rounding to nearest, and other values for directed roundings */
     let hx = x.to_bits();
     let mut mant: F::Int = hx & F::SIG_MASK;
-    let sign: F::Int = hx >> (F::BITS - 1);
+    let sign: F::Int = hx & F::SIGN_MASK;
     let neg = x.is_sign_negative();
 
     let mut e: u32 = x.exp();
@@ -61,19 +60,19 @@ where
 
     /* 2^(3k+it) <= x < 2^(3k+it+1), with 0 <= it <= 3 */
     cvt5 += F::Int::cast_from(it) << F::SIG_BITS;
-    cvt5 |= sign << (F::BITS - 1);
+    cvt5 |= sign;
     let zz: F = F::from_bits(cvt5);
 
     /* cbrt(x) = cbrt(zz)*2^(et-1365) where 1 <= zz < 8 */
     let mut isc = F::ESCALE[it as usize].to_bits(); // todo: index
-    isc |= sign << (F::BITS - 1);
+    isc |= sign;
     let cvt2 = isc;
     let z: F = F::from_bits(cvt1);
 
     /* cbrt(zz) = cbrt(z)*isc, where isc encodes 1, 2^(1/3) or 2^(2/3),
     and 1 <= z < 2 */
     let r: F = F::ONE / z;
-    let rr: F = r * rsc[((it as usize) << 1) | neg as usize];
+    let rr: F = r * F::RSC[((it as usize) << 1) | neg as usize];
     let z2: F = z * z;
     let c0: F = F::C[0] + z * F::C[1];
     let c2: F = F::C[2] + z * F::C[3];
@@ -155,7 +154,7 @@ where
             if round != Round::Nearest {
                 for (a, b) in F::WLIST {
                     if azz == a {
-                        let tmp = if F::Int::from(round as u8) + sign == F::Int::cast_from(2) {
+                        let tmp = if F::Int::from(round as u8 + neg as u8) == F::Int::cast_from(2) {
                             F::TWO_POW_NEG_SIG_BITS
                         } else {
                             F::ZERO
