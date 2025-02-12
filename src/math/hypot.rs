@@ -41,15 +41,18 @@ fn cr_hypot(mut x: f64, mut y: f64) -> f64 {
         let wx: u64 = xi << 1;
         let wy: u64 = yi << 1;
         let wm: u64 = emsk << 1;
-        let ninf: i32 = ((wx == wm) ^ (wy == wm)) as i32;
-        let nqnn: i32 = (((wx >> 52) == 0xfff) ^ ((wy >> 52) == 0xfff)) as i32;
-        /* ninf is 1 when only one of x and y is +/-Inf
-        nqnn is 1 when only one of x and y is qNaN
-        IEEE 754 says that hypot(+/-Inf,qNaN)=hypot(qNaN,+/-Inf)=+Inf. */
-        if ninf != 0 && nqnn != 0 {
+
+        let one_inf = (wx == wm) ^ (wy == wm);
+        let one_nan = x.is_nan() ^ y.is_nan();
+
+        // let nqnn: i32 = (((wx >> 52) == 0xfff) ^ ((wy >> 52) == 0xfff)) as i32;
+        // /* ninf is 1 when only one of x and y is +/-Inf
+        // nqnn is 1 when only one of x and y is qNaN
+        // IEEE 754 says that hypot(+/-Inf,qNaN)=hypot(qNaN,+/-Inf)=+Inf. */
+        if one_inf && one_nan {
             return f64::INFINITY;
         }
-        return x + y; /* inf, nan */
+        return x + y; /* inf, sNaN */
     }
 
     let u: f64 = x.max(y);
@@ -88,7 +91,7 @@ fn cr_hypot(mut x: f64, mut y: f64) -> f64 {
     let de: u64 = xd.wrapping_sub(yd);
     if de > (27_u64 << 52) {
         cold_path();
-        return __builtin_fma(hf64!("0x1p-27"), v, u);
+        return fmaf64(hf64!("0x1p-27"), v, u);
     }
 
     let off: i64 = (0x3ff_i64 << 52) - (xd & emsk) as i64;
@@ -97,25 +100,25 @@ fn cr_hypot(mut x: f64, mut y: f64) -> f64 {
     x = f64::from_bits(xd);
     y = f64::from_bits(yd);
     let x2: f64 = x * x;
-    let dx2: f64 = __builtin_fma(x, x, -x2);
+    let dx2: f64 = fmaf64(x, x, -x2);
     let y2: f64 = y * y;
-    let dy2: f64 = __builtin_fma(y, y, -y2);
+    let dy2: f64 = fmaf64(y, y, -y2);
     let r2: f64 = x2 + y2;
     let ir2: f64 = 0.5 / r2;
     let dr2: f64 = ((x2 - r2) + y2) + (dx2 + dy2);
     let mut th: f64 = sqrt(r2);
     let rsqrt: f64 = th * ir2;
-    let dz: f64 = dr2 - __builtin_fma(th, th, -r2);
+    let dz: f64 = dr2 - fmaf64(th, th, -r2);
     let mut tl: f64 = rsqrt * dz;
     th = fasttwosum(th, tl, &mut tl);
     let mut thd: u64 = th.to_bits();
-    let tld = __builtin_fabs(tl).to_bits();
+    let tld = tl.abs().to_bits();
     ex = thd;
     ey = tld;
     ex &= 0x7ff_u64 << 52;
     let aidr: u64 = ey + (0x3fe_u64 << 52) - ex;
     let mid: u64 = (aidr.wrapping_sub(0x3c90000000000000) + 16) >> 5;
-    if mid == 0 || aidr < 0x39b0000000000000_u64 || aidr > 0x3c9fffffffffff80_u64 {
+    if mid == 0 || !(0x39b0000000000000_u64..=0x3c9fffffffffff80_u64).contains(&aidr) {
         cold_path();
         thd = as_hypot_hard(x, y, flag).to_bits();
     }
@@ -164,10 +167,11 @@ fn as_hypot_hard(x: f64, y: f64, flag: FExcept) -> f64 {
     rm |= 1u64 << 52;
 
     for _ in 0..3 {
-        if __builtin_expect(rm == 1u64 << 52, true) {
+        if rm == 1u64 << 52 {
             rm = u64::MAX >> 11;
             re -= 1;
         } else {
+            cold_path();
             rm -= 1;
         }
     }
@@ -177,10 +181,11 @@ fn as_hypot_hard(x: f64, y: f64, flag: FExcept) -> f64 {
     let de: i32 = be - le;
     let mut ls: i32 = bs - de;
 
-    if __builtin_expect(ls >= 0, true) {
+    if ls >= 0 {
         lm <<= ls;
         m2 += lm.wrapping_mul(lm);
     } else {
+        cold_path();
         let lm2: u128 = (lm as u128) * (lm as u128);
         ls *= 2;
         m2 += (lm2 >> -ls) as u64;
@@ -203,19 +208,19 @@ fn as_hypot_hard(x: f64, y: f64, flag: FExcept) -> f64 {
 
     if d == 0 {
         set_flags(flag);
-    } else {
-        if __builtin_expect(op == om, true) {
-            let tm: u64 = (rm << k) - (1 << (k - (rm <= (1u64 << 53)) as i32));
-            d = m2 as i64 - (tm.wrapping_mul(tm)) as i64;
+    } else if op == om {
+        let tm: u64 = (rm << k) - (1 << (k - (rm <= (1u64 << 53)) as i32));
+        d = m2 as i64 - (tm.wrapping_mul(tm)) as i64;
 
-            if __builtin_expect(d != 0, true) {
-                rm = rm.wrapping_add((d >> 63) as u64);
-            } else {
-                rm -= rm & 1;
-            }
+        if d == 0 {
+            cold_path();
+            rm -= rm & 1;
         } else {
-            rm -= ((op == 1.0) as u64) << (rm > (1u64 << 53)) as u32;
+            rm = rm.wrapping_add((d >> 63) as u64);
         }
+    } else {
+        cold_path();
+        rm -= ((op == 1.0) as u64) << (rm > (1u64 << 53)) as u32;
     }
 
     if rm >= (1u64 << 53) {
@@ -282,20 +287,16 @@ fn as_hypot_denorm(mut a: u64, mut b: u64) -> f64 {
     f64::from_bits(xi)
 }
 
-fn __builtin_expect<T>(v: T, _exp: T) -> T {
-    v
-}
+fn fmaf64(x: f64, y: f64, z: f64) -> f64 {
+    #[cfg(intrinsics_enabled)]
+    {
+        return unsafe { core::intrinsics::fmaf64(x, y, z) };
+    }
 
-fn __builtin_fabs(x: f64) -> f64 {
-    x.abs()
-}
-
-fn __builtin_copysign(x: f64, y: f64) -> f64 {
-    x.copysign(y)
-}
-
-fn __builtin_fma(x: f64, y: f64, z: f64) -> f64 {
-    unsafe { core::intrinsics::fmaf64(x, y, z) }
+    #[cfg(not(intrinsics_enabled))]
+    {
+        return super::fma(x, y, z);
+    }
 }
 
 type FExcept = u32;
