@@ -429,7 +429,16 @@ fn frexpf_cases() -> Vec<TestCase<op::frexpf::Routine>> {
 }
 
 fn hypot_cases() -> Vec<TestCase<op::hypot::Routine>> {
-    vec![]
+    let mut v = vec![];
+    TestCase::append_pairs(
+        &mut v,
+        &[(
+            // Case that can overflow exponent if wrapping arithmetic is not used
+            (hf64!("-0x1.800f800f80100p+1023"), hf64!("0x1.8354835473720p+996")),
+            Some(hf64!("0x1.800f800f80100p+1023")),
+        )],
+    );
+    v
 }
 
 fn hypotf_cases() -> Vec<TestCase<op::hypotf::Routine>> {

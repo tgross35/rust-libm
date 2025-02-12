@@ -118,7 +118,7 @@ fn cr_hypot(mut x: f64, mut y: f64) -> f64 {
     ex = thd;
     ey = tld;
     ex &= 0x7ff_u64 << 52;
-    let aidr: u64 = ey + (0x3fe_u64 << 52) - ex;
+    let aidr: u64 = ey.wrapping_add(0x3fe_u64 << 52).wrapping_sub(ex);
     let mid: u64 = (aidr.wrapping_sub(0x3c90000000000000) + 16) >> 5;
     if mid == 0 || !(0x39b0000000000000_u64..=0x3c9fffffffffff80_u64).contains(&aidr) {
         cold_path();
