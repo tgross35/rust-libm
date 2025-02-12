@@ -17,7 +17,7 @@
 use super::sqrt;
 #[allow(unused_imports)] // msrv compat
 use super::support::Float;
-use super::support::cold_path;
+use super::support::{Hexf, cold_path};
 
 #[cfg_attr(all(test, assert_no_panic), no_panic::no_panic)]
 pub fn hypot(x: f64, y: f64) -> f64 {
@@ -185,7 +185,7 @@ fn as_hypot_hard(x: f64, y: f64, flag: FExcept) -> f64 {
 
     if ls >= 0 {
         lm <<= ls;
-        m2 += lm.wrapping_mul(lm);
+        m2 = m2.wrapping_add(lm.wrapping_mul(lm));
     } else {
         cold_path();
         let lm2: u128 = (lm as u128) * (lm as u128);

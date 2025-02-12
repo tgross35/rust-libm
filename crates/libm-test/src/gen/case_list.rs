@@ -432,11 +432,17 @@ fn hypot_cases() -> Vec<TestCase<op::hypot::Routine>> {
     let mut v = vec![];
     TestCase::append_pairs(
         &mut v,
-        &[(
-            // Case that can overflow exponent if wrapping arithmetic is not used
-            (hf64!("-0x1.800f800f80100p+1023"), hf64!("0x1.8354835473720p+996")),
-            Some(hf64!("0x1.800f800f80100p+1023")),
-        )],
+        &[
+            // Cases that can overflow exponent if wrapping arithmetic is not used
+            (
+                (hf64!("-0x1.800f800f80100p+1023"), hf64!("0x1.8354835473720p+996")),
+                Some(hf64!("0x1.800f800f80100p+1023")),
+            ),
+            (
+                (hf64!("0x1.201b201b201c0p+0"), hf64!("0x1.b028b028b02a0p-1")),
+                Some(hf64!("0x1.6821e821e8230p+0")),
+            ),
+        ],
     );
     v
 }
