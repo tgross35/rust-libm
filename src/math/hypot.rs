@@ -17,7 +17,7 @@
 use super::sqrt;
 #[allow(unused_imports)] // msrv compat
 use super::support::Float;
-use super::support::{Hexf, cold_path};
+use super::support::cold_path;
 
 #[cfg_attr(all(test, assert_no_panic), no_panic::no_panic)]
 pub fn hypot(x: f64, y: f64) -> f64 {
