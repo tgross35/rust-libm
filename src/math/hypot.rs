@@ -1,11 +1,21 @@
-/*
-Copyright (c) 2022 Alexei Sibidanov.
+/* SPDX-License-Identifier: MIT */
+/* origin: core-math/src/binary64/hypot/hypot.c
+ * Copyright (c) 2022 Alexei Sibidanov.
+ * Ported to Rust in 2025 by Trevor Gross.
+ */
 
-This file is part of the CORE-MATH project
-(https://core-math.gitlabpages.inria.fr/).
-*/
+//! Euclidian distance via the pythagorean theorem (`√(x2 + y2)`).
+//!
+//! Per IEEE 754-2019:
+//!
+//! - Domain: `[−∞, +∞] × [−∞, +∞]`
+//! - `hypot(±0, ±0)` is +0
+//! - `hypot(±∞, qNaN)` is +∞
+//! - `hypot(qNaN, ±∞)` is +∞.
+//! - May raise overflow or underflow
 
 use super::sqrt;
+use super::support::cold_path;
 
 #[cfg_attr(all(test, assert_no_panic), no_panic::no_panic)]
 pub fn hypot(x: f64, y: f64) -> f64 {
@@ -22,9 +32,11 @@ fn cr_hypot(mut x: f64, mut y: f64) -> f64 {
     let mut ex: u64 = xi & emsk;
     let mut ey: u64 = yi & emsk;
     /* emsk corresponds to the upper bits of NaN and Inf (apart the sign bit) */
-    x = __builtin_fabs(x);
-    y = __builtin_fabs(y);
-    if __builtin_expect(ex == emsk || ey == emsk, false) {
+    x = x.abs();
+    y = y.abs();
+    if ex == emsk || ey == emsk {
+        cold_path();
+
         /* Either x or y is NaN or Inf */
         let wx: u64 = xi << 1;
         let wy: u64 = yi << 1;
@@ -46,14 +58,18 @@ fn cr_hypot(mut x: f64, mut y: f64) -> f64 {
     let mut yd: u64 = v.to_bits();
     ey = yd;
 
-    if __builtin_expect(ey >> 52 == 0, false) {
+    if ey >> 52 == 0 {
+        cold_path();
+
         if yd == 0 {
             return f64::from_bits(xd);
         }
 
         ex = xd;
 
-        if __builtin_expect(ex >> 52 == 0, false) {
+        if ex >> 52 == 0 {
+            cold_path();
+
             if ex == 0 {
                 return 0.0;
             }
@@ -70,7 +86,8 @@ fn cr_hypot(mut x: f64, mut y: f64) -> f64 {
     }
 
     let de: u64 = xd.wrapping_sub(yd);
-    if __builtin_expect(de > (27_u64 << 52), false) {
+    if de > (27_u64 << 52) {
+        cold_path();
         return __builtin_fma(hf64!("0x1p-27"), v, u);
     }
 
@@ -98,14 +115,13 @@ fn cr_hypot(mut x: f64, mut y: f64) -> f64 {
     ex &= 0x7ff_u64 << 52;
     let aidr: u64 = ey + (0x3fe_u64 << 52) - ex;
     let mid: u64 = (aidr.wrapping_sub(0x3c90000000000000) + 16) >> 5;
-    if __builtin_expect(
-        mid == 0 || aidr < 0x39b0000000000000_u64 || aidr > 0x3c9fffffffffff80_u64,
-        false,
-    ) {
+    if mid == 0 || aidr < 0x39b0000000000000_u64 || aidr > 0x3c9fffffffffff80_u64 {
+        cold_path();
         thd = as_hypot_hard(x, y, flag).to_bits();
     }
     thd = thd.wrapping_sub(off as u64);
-    if __builtin_expect(thd >= (0x7ff_u64 << 52), false) {
+    if thd >= (0x7ff_u64 << 52) {
+        cold_path();
         return as_hypot_overflow();
     }
 
@@ -169,8 +185,6 @@ fn as_hypot_hard(x: f64, y: f64, flag: FExcept) -> f64 {
         ls *= 2;
         m2 += (lm2 >> -ls) as u64;
         m2 |= ((lm2 << (128 + ls)) != 0) as u64;
-        extern crate std;
-        std::println!("here");
     }
 
     let k: i32 = bs + re;
@@ -179,7 +193,7 @@ fn as_hypot_hard(x: f64, y: f64, flag: FExcept) -> f64 {
     loop {
         rm += 1 + (rm >= (1u64 << 53)) as u64;
         let tm: u64 = rm << k;
-        let rm2: u64 = tm * tm;
+        let rm2: u64 = tm.wrapping_mul(tm);
         d = m2 as i64 - rm2 as i64;
 
         if d <= 0 {
@@ -192,10 +206,10 @@ fn as_hypot_hard(x: f64, y: f64, flag: FExcept) -> f64 {
     } else {
         if __builtin_expect(op == om, true) {
             let tm: u64 = (rm << k) - (1 << (k - (rm <= (1u64 << 53)) as i32));
-            d = m2 as i64 - (tm * tm) as i64;
+            d = m2 as i64 - (tm.wrapping_mul(tm)) as i64;
 
             if __builtin_expect(d != 0, true) {
-                rm += d as u64 >> 63;
+                rm = rm.wrapping_add((d >> 63) as u64);
             } else {
                 rm -= rm & 1;
             }
@@ -239,25 +253,31 @@ fn as_hypot_denorm(mut a: u64, mut b: u64) -> f64 {
         p_d = d;
         rm = rm.wrapping_add(drm as u64);
         d = d.wrapping_sub(dd);
-        dd = d.wrapping_add(8);
-        if !__builtin_expect((d ^ p_d) > 0, false) {
+        dd = dd.wrapping_add(8);
+        if (d ^ p_d) <= 0 {
+            cold_path();
             break;
         }
     }
     p_d = (sd & d) + (!sd & p_d);
-    if __builtin_expect(p_d != 0, true) {
-        if __builtin_expect(op == om, true) {
-            let sum: i64 = p_d.wrapping_sub(4_i64.wrapping_mul(rm as i64)).wrapping_sub(1);
+    if p_d != 0 {
+        if op == om {
+            let sum: i64 = p_d.wrapping_sub(4u64.wrapping_mul(rm) as i64).wrapping_sub(1);
 
-            if __builtin_expect(sum != 0, true) {
-                rm = rm.wrapping_add((sum as u64 >> 63) + 1);
+            if sum != 0 {
+                rm = rm.wrapping_add((sum >> 63).wrapping_add(1) as u64);
             } else {
+                cold_path();
                 rm += rm & 1;
             }
         } else {
+            cold_path();
             rm += (op > 1.0) as u64;
         }
+    } else {
+        cold_path();
     }
+
     let xi: u64 = rm;
     f64::from_bits(xi)
 }
@@ -279,11 +299,6 @@ fn __builtin_fma(x: f64, y: f64, z: f64) -> f64 {
 }
 
 type FExcept = u32;
-
-fn get_rounding_mode(_flag: &mut FExcept) -> i32 {
-    // Always nearest
-    0
-}
 
 fn set_flags(_flag: FExcept) {}
 
