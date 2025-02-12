@@ -15,6 +15,8 @@
 //! - May raise overflow or underflow
 
 use super::sqrt;
+#[allow(unused_imports)] // msrv compat
+use super::support::Float;
 use super::support::cold_path;
 
 #[cfg_attr(all(test, assert_no_panic), no_panic::no_panic)]
