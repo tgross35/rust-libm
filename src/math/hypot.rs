@@ -190,7 +190,7 @@ fn as_hypot_hard(x: f64, y: f64, flag: FExcept) -> f64 {
         cold_path();
         let lm2: u128 = (lm as u128) * (lm as u128);
         ls *= 2;
-        m2 += (lm2 >> -ls) as u64;
+        m2 = m2.wrapping_add((lm2 >> -ls) as u64);
         m2 |= ((lm2 << (128 + ls)) != 0) as u64;
     }
 
